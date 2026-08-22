@@ -1,0 +1,23 @@
+/* Web-specific CSS overrides */
+
+/* Fix conflict with Tailwind CSS utility where .collapse sets 'visibility: collapse;' */
+.collapse,
+.navbar-collapse,
+.collapsing {
+  visibility: visible !important;
+}
+
+/* Ensure dropdown menu is visible when .show class is active */
+.navbar .nav-item .dropdown-menu.show {
+  visibility: visible !important;
+  opacity: 1 !important;
+  transform: rotateX(0deg) !important;
+  display: block !important;
+}
+
+/* Ensure navbar collapse displays cleanly when .show is active on mobile */
+@media (max-width: 991.98px) {
+  .navbar-collapse.collapse.show {
+    display: block !important;
+  }
+}
