@@ -3,9 +3,10 @@ import type { Metadata } from "next";
 import UserList from "@/app/components/admin/UserList";
 
 export const metadata: Metadata = {
-  title: "Users | BlogVerse Admin",
+  title: "Users | Makhan Chor Admin",
   description: "Manage users and client tables",
 };
+
 
 export default function AdminUsersPage() {
   return (

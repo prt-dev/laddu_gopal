@@ -3,9 +3,10 @@ import type { Metadata } from "next";
 import BlogPreview from "@/app/components/admin/BlogPreview";
 
 export const metadata: Metadata = {
-  title: "Blog Preview | BlogVerse Admin",
+  title: "Blog Preview | Makhan Chor Admin",
   description: "Live article preview with SEO inspector and device switcher",
 };
+
 
 export default function AdminBlogPreviewPage() {
   return (

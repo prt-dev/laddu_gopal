@@ -3,20 +3,20 @@ import PageHeader from "../../components/web/PageHeader";
 import Testimonials from "../../components/web/Testimonials";
 
 export const metadata: Metadata = {
-  title: "Testimonials & Reviews | BlogVerse",
+  title: "Devotee Experiences & Reviews | Makhan Chor",
   description:
-    "Read what readers, authors, and creators have to say about the BlogVerse reading and publishing experience.",
+    "Read what devotees and Krishna bhakts worldwide share about their experience with Makhan Chor.",
 };
 
 export default function TestimonialPage() {
   return (
     <>
       <PageHeader
-        title="Testimonial"
+        title="Devotee Experiences"
         breadcrumbs={[
           { label: "Home", href: "/" },
-          { label: "Pages", href: "#" },
-          { label: "Testimonial" },
+          { label: "Reviews", href: "#" },
+          { label: "Devotee Voices" },
         ]}
       />
       <Testimonials />

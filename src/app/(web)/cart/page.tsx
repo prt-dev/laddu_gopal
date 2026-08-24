@@ -4,29 +4,26 @@ import CartTable from "../../components/web/CartTable";
 import CartSummary from "../../components/web/CartSummary";
 
 export const metadata: Metadata = {
-  title: "Reading Cart | BlogVerse",
+  title: "Devotional Basket & Cart | Makhan Chor - Laddu Gopal",
   description:
-    "Review your selected e-books, subscriptions, and publication guides on BlogVerse.",
+    "Review your selected Laddu Gopal poshak, pagdi, and kundan shringar items.",
 };
 
 export default function CartPage() {
   return (
     <>
       <PageHeader
-        title="Cart"
+        title="Your Devotional Basket"
         breadcrumbs={[
           { label: "Home", href: "/" },
-          { label: "Pages", href: "#" },
-          { label: "Cart" },
+          { label: "Cart", href: "/cart" },
+          { label: "Basket Items" },
         ]}
       />
 
-      {/* Cart Section */}
-      <div className="container-fluid py-5">
-        <div className="container py-5">
-          <CartTable />
-          <CartSummary />
-        </div>
+      <div className="mx-auto max-w-[1100px] px-5 py-10">
+        <CartTable />
+        <CartSummary />
       </div>
     </>
   );

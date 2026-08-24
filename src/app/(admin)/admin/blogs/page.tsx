@@ -4,9 +4,10 @@ import Link from "next/link";
 import BlogList from "@/app/components/admin/BlogList";
 
 export const metadata: Metadata = {
-  title: "Blogs | BlogVerse Admin",
-  description: "Manage and create blogs on BlogVerse",
+  title: "Blogs | Makhan Chor Admin",
+  description: "Manage and create devotional blogs on Makhan Chor",
 };
+
 
 export default function AdminBlogsPage() {
   return (

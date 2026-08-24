@@ -3,20 +3,20 @@ import PageHeader from "../../components/web/PageHeader";
 import ShopSection from "../../components/web/ShopSection";
 
 export const metadata: Metadata = {
-  title: "Explore Articles & Publications | BlogVerse",
+  title: "Shop Laddu Gopal Poshak & Shringar Collection | Makhan Chor",
   description:
-    "Browse our full collection of technology insights, design patterns, tutorials, and digital publications on BlogVerse.",
+    "Browse our complete handcrafted devotional collection: Pagdi, Kundan Shringar, Designer Poshak, Flutes, and Laddu Gopal accessories.",
 };
 
 export default function ShopPage() {
   return (
     <>
       <PageHeader
-        title="Articles & Publications"
+        title="Our Divine Collection"
         breadcrumbs={[
           { label: "Home", href: "/" },
-          { label: "Explore", href: "#" },
-          { label: "Publications" },
+          { label: "Categories", href: "#categories" },
+          { label: "All Items" },
         ]}
       />
       <ShopSection />

@@ -1,23 +1,44 @@
-/* Web-specific CSS overrides */
+/* Web-specific styling matching laddu_gopal.html */
 
-/* Fix conflict with Tailwind CSS utility where .collapse sets 'visibility: collapse;' */
-.collapse,
-.navbar-collapse,
-.collapsing {
-  visibility: visible !important;
+body {
+  font-family: "Bubblegum Sans", cursive !important;
+  color: #000000 !important;
+  background-color: #ffffff !important;
 }
 
-/* Ensure dropdown menu is visible when .show class is active */
-.navbar .nav-item .dropdown-menu.show {
-  visibility: visible !important;
-  opacity: 1 !important;
-  transform: rotateX(0deg) !important;
-  display: block !important;
+h1, h2, h3, h4, h5, h6, .heading-font {
+  font-family: "Bubblegum Sans", cursive !important;
 }
 
-/* Ensure navbar collapse displays cleanly when .show is active on mobile */
-@media (max-width: 991.98px) {
-  .navbar-collapse.collapse.show {
-    display: block !important;
-  }
+p, span, div, a, button, input, textarea, select {
+  font-family: "Bubblegum Sans", cursive;
+}
+
+/* Nav & header styling */
+header {
+  background-color: #fff0ad !important;
+}
+
+footer {
+  background-color: #fff0ad !important;
+}
+
+/* Primary brand button styling exactly from laddu_gopal.html */
+.theme-btn {
+  background-color: #d20b4f !important;
+  color: #000000 !important;
+  font-weight: 700 !important;
+  border-radius: 0.25rem !important;
+  padding: 0.5rem 1.5rem !important;
+  font-size: 0.875rem !important;
+  transition: background-color 0.2s ease-in-out !important;
+  text-decoration: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.theme-btn:hover {
+  background-color: #b80943 !important;
+  color: #000000 !important;
 }

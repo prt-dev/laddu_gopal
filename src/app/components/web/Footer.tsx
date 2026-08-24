@@ -1,117 +1,61 @@
+import Link from "next/link";
 import { siteConfig } from "../../config/site";
 
 export default function Footer() {
   return (
-    <>
-      {/* Footer */}
-      <div className="container-fluid bg-dark text-white-50 footer pt-5 mt-5">
-        <div className="container py-5">
-          {/* Top Row: Brand, Newsletter, Socials */}
-          <div className="pb-4 mb-4" style={{ borderBottom: "1px solid rgba(226, 175, 24, 0.5)" }}>
-            <div className="row g-4 align-items-center">
-              <div className="col-lg-3">
-                <a href="/" className="text-decoration-none">
-                  <h1 className="text-primary mb-0 fw-bold d-flex align-items-center">
-                    <i className="fas fa-feather-alt text-secondary me-2"></i>
-                    {siteConfig.name}
-                  </h1>
-                  <p className="text-secondary mb-0">Stories &amp; Digital Publishing</p>
-                </a>
-              </div>
-              <div className="col-lg-6">
-                <div className="position-relative mx-auto">
-                  <input
-                    className="form-control border-0 w-100 py-3 px-4 rounded-pill"
-                    type="email"
-                    placeholder="Enter your Email for Weekly Curated Stories"
-                  />
-                  <button
-                    type="submit"
-                    className="btn btn-primary border-0 border-secondary py-3 px-4 position-absolute rounded-pill text-white fw-bold"
-                    style={{ top: 0, right: 0 }}
-                  >
-                    Subscribe
-                  </button>
-                </div>
-              </div>
-              <div className="col-lg-3">
-                <div className="d-flex justify-content-end pt-3">
-                  <a className="btn btn-outline-secondary me-2 btn-md-square rounded-circle" href="#" target="_blank" rel="noreferrer">
-                    <i className="fab fa-twitter"></i>
-                  </a>
-                  <a className="btn btn-outline-secondary me-2 btn-md-square rounded-circle" href="#">
-                    <i className="fab fa-github"></i>
-                  </a>
-                  <a className="btn btn-outline-secondary me-2 btn-md-square rounded-circle" href="#">
-                    <i className="fab fa-linkedin-in"></i>
-                  </a>
-                  <a className="btn btn-outline-secondary btn-md-square rounded-circle" href="#">
-                    <i className="fab fa-discord"></i>
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
+    <footer id="contact" className="mt-8 bg-[#fff0ad] px-8 py-8">
+      <div className="mx-auto grid max-w-[900px] grid-cols-1 gap-8 sm:grid-cols-2">
+        {/* Contact */}
+        <div>
+          <h2 className="heading-font text-[23px] text-[#d20b4f] font-bold">
+            Contact Details :
+          </h2>
 
-          {/* Link Columns */}
-          <div className="row g-5">
-            <div className="col-lg-3 col-md-6">
-              <div className="footer-item">
-                <h4 className="text-light mb-3">About BlogVerse</h4>
-                <p className="mb-4">
-                  A modern storytelling &amp; technology publishing platform empowering thinkers, engineers, designers, and creators worldwide.
-                </p>
-                <a href="/shop" className="btn border-secondary py-2 px-4 rounded-pill text-primary fw-bold">Explore Stories</a>
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-6">
-              <div className="d-flex flex-column text-start footer-item">
-                <h4 className="text-light mb-3">Topics &amp; Tracks</h4>
-                {["Software Architecture", "Artificial Intelligence", "Design & UX Patterns", "Startup Playbooks", "Cloud & DevOps", "Writing & Culture"].map((l) => (
-                  <a key={l} className="btn-link" href="/shop">{l}</a>
-                ))}
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-6">
-              <div className="d-flex flex-column text-start footer-item">
-                <h4 className="text-light mb-3">Quick Links</h4>
-                {["Home", "Blog Preview", "Editorial Guidelines", "Author Program", "Privacy Policy", "Terms of Service"].map((l) => (
-                  <a key={l} className="btn-link" href="#">{l}</a>
-                ))}
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-6">
-              <div className="footer-item">
-                <h4 className="text-light mb-3">Editorial Desk</h4>
-                <p><i className="fas fa-map-marker-alt text-primary me-2"></i>{siteConfig.address}</p>
-                <p><i className="fas fa-envelope text-primary me-2"></i>{siteConfig.email}</p>
-                <p><i className="fas fa-phone-alt text-primary me-2"></i>{siteConfig.phone1}</p>
-                <p><i className="fas fa-phone-alt text-primary me-2"></i>{siteConfig.phone2}</p>
-                <p className="mt-2 text-light small">Open 24/7 for Reader &amp; Author Submissions</p>
-              </div>
-            </div>
+          <p className="mt-6 text-sm leading-[1.5] text-black">
+            Phone Number - {siteConfig.phone1}
+            <br />
+            Whatsapp - {siteConfig.phone1}
+            <br />
+            Email - {siteConfig.email}
+          </p>
+        </div>
+
+        {/* Resources */}
+        <div id="blogs">
+          <h2 className="heading-font text-[23px] text-[#d20b4f] font-bold">
+            Resources :
+          </h2>
+
+          <div className="mt-6 text-sm leading-[1.5] text-black">
+            <Link href="/blog-preview" className="block text-black hover:text-[#d20b4f] no-underline">
+              Blogs
+            </Link>
+
+            <Link href="/shop" className="block text-black hover:text-[#d20b4f] no-underline">
+              Size Chart
+            </Link>
+
+            <Link href="/shop" className="block text-black hover:text-[#d20b4f] no-underline">
+              Gallery
+            </Link>
           </div>
         </div>
-      </div>
 
-      {/* Copyright */}
-      <div className="container-fluid copyright bg-dark py-4">
-        <div className="container">
-          <div className="row">
-            <div className="col-md-6 text-center text-md-start mb-3 mb-md-0">
-              <span className="text-light">
-                <a href="/">
-                  <i className="fas fa-copyright text-light me-2"></i>{siteConfig.name}
-                </a>
-                , All rights reserved.
-              </span>
-            </div>
-            <div className="col-md-6 my-auto text-center text-md-end text-white">
-              Modern Storytelling &amp; Digital Publishing Platform
-            </div>
-          </div>
+        {/* Location */}
+        <div className="sm:col-span-2">
+          <h2 className="heading-font text-[23px] text-[#d20b4f] font-bold">
+            Location Details:
+          </h2>
+
+          <p className="mt-6 text-sm leading-[1.5] text-black">
+            College More, Kanchrapara,
+            <br />
+            Kolkata, West Bengal
+            <br />
+            743145
+          </p>
         </div>
       </div>
-    </>
+    </footer>
   );
 }

@@ -14,13 +14,6 @@ export default function WebProtectedRoute({ children }: Props) {
   const router = useRouter();
   const pathname = usePathname();
 
-
-  // useEffect(() => {
-  //   router.replace("/admin/dashboard");
-  // }, [router]);
-
-  return <Loading variant="web" message="Redirecting to Admin Portal..." />;
-
   const isPublicWebPage =
     pathname === "/" ||
     pathname === "/login" ||
@@ -28,8 +21,13 @@ export default function WebProtectedRoute({ children }: Props) {
     pathname === "/forgot-password" ||
     pathname === "/shop" ||
     pathname === "/shop-detail" ||
+    pathname === "/blog-preview" ||
     pathname === "/contact" ||
-    pathname === "/testimonial";
+    // pathname === "/cart" ||
+    // pathname === "/checkout" ||
+    pathname === "/testimonial" ||
+    pathname?.startsWith("/shop") ||
+    pathname?.startsWith("/blog");
 
   const isAuthPage =
     pathname === "/login" ||
@@ -60,3 +58,4 @@ export default function WebProtectedRoute({ children }: Props) {
 
   return <>{children}</>;
 }
+

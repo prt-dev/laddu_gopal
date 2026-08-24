@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import TemplateScript from "@/app/components/web/TemplateScript";
 
 interface WebAuthLayoutClientProps {
   children: React.ReactNode;
@@ -9,13 +8,8 @@ interface WebAuthLayoutClientProps {
 
 export default function WebAuthLayoutClient({ children }: WebAuthLayoutClientProps) {
   return (
-    <div className="web-auth-layout-root">
-      <main className="min-vh-100 d-flex align-items-center justify-content-center bg-light py-5">
-        {children}
-      </main>
-
-      {/* Template script initializer */}
-      <TemplateScript />
+    <div className="min-h-screen flex items-center justify-center bg-[#fff0ad]/20 py-12 px-4 font-['Bubblegum_Sans',cursive]">
+      <main className="w-full flex items-center justify-center">{children}</main>
     </div>
   );
 }

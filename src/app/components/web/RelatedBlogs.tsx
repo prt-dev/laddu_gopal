@@ -9,25 +9,25 @@ interface RelatedBlogsProps {
 
 const defaultRelated = [
   {
-    title: "10 Key Innovations in Modern Web Architecture",
-    excerpt: "How server components, streaming SSR, and edge execution loops are reshaping web performance.",
+    title: "Daily Seva Vidhi & Sizing Guide for Bal Gopal",
+    excerpt: "Learn traditional Laddu Gopal seva vidhi, poshak sizing, and shringar tips.",
     date: "Aug 12, 2026",
-    image: "/assets/img/featur-1.jpg",
-    slug: "modern-web-architecture",
+    image: "/assets/best-selling.png",
+    slug: "daily-seva-vidhi-sizing-guide",
   },
   {
-    title: "Building Production Multi-Agent Systems in 2026",
-    excerpt: "Designing resilient tool sandboxes and deterministic supervisor agents with distributed memory.",
+    title: "How to Style Pagdi & Mor Pankh for Janmashtami",
+    excerpt: "A complete step-by-step guide to dressing your Laddu Gopal for festival celebrations.",
     date: "Aug 08, 2026",
-    image: "/assets/img/featur-2.jpg",
-    slug: "ai-agent-engineering",
+    image: "/assets/pagdi.png",
+    slug: "how-to-style-pagdi-mor-pankh",
   },
   {
-    title: "Design Systems at Scale: Tokens & Fluid Typography",
-    excerpt: "Constructing accessible and delightful user interfaces with harmonious design tokens.",
+    title: "Significance of Kundan Shringar in Krishna Bhakti",
+    excerpt: "Understanding the divine beauty and spiritual significance of handmade shringar ornaments.",
     date: "Aug 02, 2026",
-    image: "/assets/img/featur-3.jpg",
-    slug: "design-systems-scale",
+    image: "/assets/kundan.png",
+    slug: "significance-kundan-shringar",
   },
 ];
 
@@ -35,47 +35,48 @@ export default function RelatedBlogs({ blogs = [] }: RelatedBlogsProps) {
   const items = blogs.length > 0 ? blogs.slice(0, 3) : defaultRelated;
 
   return (
-    <div className="mt-5 pt-4">
-      <h3 className="fw-bold text-dark mb-4">Related Insights &amp; Articles</h3>
-      <div className="row g-4">
+    <div className="mt-8 border-t border-[#fff0ad] pt-6">
+      <h3 className="heading-font text-xl font-bold text-[#d20b4f] mb-4">
+        Related Devotional Articles
+      </h3>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {items.map((item, idx) => (
-          <div key={idx} className="col-md-4">
-            <div className="card h-100 border rounded shadow-sm overflow-hidden">
+          <div key={idx} className="rounded border border-[#fff0ad] bg-white overflow-hidden flex flex-col">
+            <div className="h-40 w-full bg-[#fff0ad]/30 p-2 flex items-center justify-center">
               <img
                 src={
                   (item as any).featured_image
                     ? getFullImageUrl((item as any).featured_image)
-                    : (item as any).image || "/assets/img/featur-1.jpg"
+                    : (item as any).image || "/assets/best-selling.png"
                 }
-                className="card-img-top"
-                style={{ height: "200px", objectFit: "cover" }}
+                className="h-full w-full object-contain"
                 alt={item.title}
               />
-              <div className="card-body d-flex flex-column">
-                <span className="text-muted small mb-2">
-                  <i className="fa fa-calendar-alt text-primary me-1" />
-                  {(item as any).published_at
-                    ? new Date((item as any).published_at).toLocaleDateString()
-                    : (item as any).date || "August 2026"}
-                </span>
-                <h5 className="card-title fw-bold text-dark mb-2">
-                  <Link
-                    href={`/blog-preview?slug=${item.slug || ""}`}
-                    className="text-dark text-decoration-none"
-                  >
-                    {item.title}
-                  </Link>
-                </h5>
-                <p className="card-text text-muted small flex-grow-1 line-clamp-2">
-                  {item.excerpt}
-                </p>
+            </div>
+            <div className="p-4 flex flex-col flex-1">
+              <span className="text-[11px] font-bold text-black mb-1">
+                <i className="fa fa-calendar-alt text-[#d20b4f] mr-1" />
+                {(item as any).published_at
+                  ? new Date((item as any).published_at).toLocaleDateString()
+                  : (item as any).date || "August 2026"}
+              </span>
+              <h5 className="heading-font text-sm font-bold text-black mb-2 line-clamp-1">
                 <Link
                   href={`/blog-preview?slug=${item.slug || ""}`}
-                  className="btn btn-sm btn-outline-primary rounded-pill mt-3 align-self-start"
+                  className="text-black hover:text-[#d20b4f] no-underline"
                 >
-                  Read Article &rarr;
+                  {item.title}
                 </Link>
-              </div>
+              </h5>
+              <p className="text-xs text-black line-clamp-2 mb-3 flex-1">
+                {item.excerpt}
+              </p>
+              <Link
+                href={`/blog-preview?slug=${item.slug || ""}`}
+                className="rounded bg-[#d20b4f] px-3 py-1 text-xs font-bold text-black transition hover:bg-[#b80943] no-underline self-start"
+              >
+                Read Article &rarr;
+              </Link>
             </div>
           </div>
         ))}

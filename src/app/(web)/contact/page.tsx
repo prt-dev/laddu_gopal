@@ -3,20 +3,19 @@ import PageHeader from "../../components/web/PageHeader";
 import ContactSection from "../../components/web/ContactSection";
 
 export const metadata: Metadata = {
-  title: "Contact Editorial & Support | BlogVerse",
+  title: "Contact Us | Makhan Chor - Laddu Gopal",
   description:
-    "Get in touch with the BlogVerse editorial team for article submissions, writer partnerships, or general inquiries.",
+    "Get in touch with Makhan Chor for handcrafted Laddu Gopal poshak, pagdi, and devotional accessories orders.",
 };
 
 export default function ContactPage() {
   return (
     <>
       <PageHeader
-        title="Contact"
+        title="Contact Makhan Chor"
         breadcrumbs={[
           { label: "Home", href: "/" },
-          { label: "Pages", href: "#" },
-          { label: "Contact" },
+          { label: "Contact Us" },
         ]}
       />
       <ContactSection />

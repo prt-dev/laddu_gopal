@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useWebAuth } from "@/app/context/WebAuthContext";
@@ -10,19 +10,19 @@ import { isValidEmail } from "@/app/utils/utils";
 export default function WebUserLoginPageComponent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
   const router = useRouter();
-  const { isAuthenticated, isLoading, login } = useWebAuth();
+  const { login } = useWebAuth();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!isValidEmail(email)) {
       alert("Enter a valid Email!");
+      return;
     }
 
     if (!password || password.length < 6) {
-      alert('Password requirement is not fullfiled!');
+      alert("Password requirement is not fulfilled!");
       return;
     }
 
@@ -30,94 +30,68 @@ export default function WebUserLoginPageComponent() {
       email: email,
       password: password,
     });
-
-    // router.push("/");
   };
 
-  // useEffect(() => {
-  //   if (!isLoading && isAuthenticated) {
-  //     router.push("/");
-  //   }
-  // }, [isLoading, isAuthenticated, router]);
-
   return (
-    <div className="w-100 px-3" style={{ maxWidth: "480px" }}>
-      <div className="card border-0 shadow-lg rounded-4 overflow-hidden">
-        <div className="card-body p-4 p-sm-5 bg-white">
-          <div className="text-center mb-4">
-            <Link href="/" className="d-inline-block mb-3 text-decoration-none">
-              <span className="h3 fw-bold text-primary mb-0">{siteConfig.name}</span>
-            </Link>
-            <h4 className="fw-bold text-dark mb-1">Reader &amp; Author Login</h4>
-            <p className="text-muted small">Sign in to your BlogVerse reader or author account</p>
+    <div className="w-full px-3 mx-auto" style={{ maxWidth: "440px" }}>
+      <div className="rounded border border-[#fff0ad] bg-[#fff0ad] p-6 sm:p-8 shadow-xs">
+        <div className="text-center mb-6">
+          <Link href="/" className="inline-block mb-2 no-underline">
+            <img src="/assets/logo.png" alt={siteConfig.name} className="w-32 h-auto mx-auto" />
+          </Link>
+          <h2 className="heading-font text-xl font-bold text-[#d20b4f] mb-1">
+            Devotee Account Login
+          </h2>
+          <p className="text-xs font-bold text-black">
+            Sign in to view orders and manage sacred seva
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} noValidate className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-black mb-1">Email Address</label>
+            <input
+              type="email"
+              className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-black focus:border-[#d20b4f] focus:outline-hidden"
+              placeholder="name@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
           </div>
 
-          <form onSubmit={handleSubmit} noValidate>
-            <div className="mb-3">
-              <label className="form-label text-dark font-weight-bold small">Email Address</label>
-              <div className="input-group">
-                <span className="input-group-text bg-white text-muted border-end-0">
-                  <i className="fas fa-envelope"></i>
-                </span>
-                <input
-                  type="email"
-                  className="form-control border-start-0 ps-0"
-                  placeholder="name@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="mb-3">
-              <div className="d-flex justify-content-between align-items-center mb-1">
-                <label className="form-label text-dark font-weight-bold mb-0 small">Password</label>
-                <Link href="/forgot-password" className="text-primary small text-decoration-none">
-                  Forgot password?
-                </Link>
-              </div>
-              <div className="input-group">
-                <span className="input-group-text bg-white text-muted border-end-0">
-                  <i className="fas fa-lock"></i>
-                </span>
-                <input
-                  type="password"
-                  className="form-control border-start-0 ps-0"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="form-check mb-4 !hidden">
-              <input
-                type="checkbox"
-                className="form-check-input"
-                id="rememberCheck"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-              />
-              <label className="form-check-label text-muted small cursor-pointer" htmlFor="rememberCheck">
-                Remember me on this device
-              </label>
-            </div>
-
-            <button type="submit" className="btn btn-primary w-100 py-2.5 rounded-pill fw-bold text-white shadow-sm">
-              <i className="fas fa-sign-in-alt me-2"></i> Log In
-            </button>
-          </form>
-
-          <div className="text-center mt-4 pt-3 border-top">
-            <p className="text-muted small mb-0">
-              Don't have an account?{" "}
-              <Link href="/register" className="text-primary fw-bold text-decoration-none ms-1">
-                Sign Up
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <label className="text-xs font-bold text-black">Password</label>
+              <Link href="/forgot-password" className="text-xs font-bold text-[#d20b4f] no-underline">
+                Forgot password?
               </Link>
-            </p>
+            </div>
+            <input
+              type="password"
+              className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-black focus:border-[#d20b4f] focus:outline-hidden"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
           </div>
+
+          <button
+            type="submit"
+            className="w-full rounded bg-[#d20b4f] py-2 text-sm font-bold text-black transition hover:bg-[#b80943] border-0 cursor-pointer"
+          >
+            Log In
+          </button>
+        </form>
+
+        <div className="text-center mt-6 pt-4 border-t border-[#d20b4f]/20">
+          <p className="text-xs font-bold text-black mb-0">
+            Don&apos;t have an account?{" "}
+            <Link href="/register" className="text-[#d20b4f] font-bold no-underline ml-1">
+              Sign Up
+            </Link>
+          </p>
         </div>
       </div>
     </div>

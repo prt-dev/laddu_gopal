@@ -1,23 +1,23 @@
 const features = [
   {
-    icon: "fas fa-feather-alt",
-    title: "Curated Editorial",
-    desc: "Hand-picked articles from top industry experts",
+    icon: "fas fa-hands-praying",
+    title: "Handcrafted Devotion",
+    desc: "Exquisite zardozi, kundan & embroidery for Thakur Ji",
   },
   {
     icon: "fas fa-globe-americas",
-    title: "Global Writer Network",
-    desc: "Stories from tech leaders and creative thinkers",
+    title: "Worldwide Devotee Dispatch",
+    desc: "Delivering pure shringar items across India & globally",
   },
   {
-    icon: "fas fa-book-reader",
-    title: "Distraction-Free Reading",
-    desc: "Clean typography and seamless reading experience",
+    icon: "fas fa-ruler-combined",
+    title: "Custom Size Options",
+    desc: "Perfect fit from Size 0 up to Size 12 Bal Gopal idols",
   },
   {
-    icon: "fas fa-rocket",
-    title: "Instant Publishing & SEO",
-    desc: "Powerful CMS tools and search optimization",
+    icon: "fas fa-star-and-crescent",
+    title: "Sacred Quality & Purity",
+    desc: "Curated with pure love as if offering to our own Thakur Ji",
   },
 ];
 

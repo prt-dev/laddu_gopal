@@ -57,28 +57,29 @@ const sampleBlog: BlogItem = {
   featured_image: "/assets/img/featur-2.jpg",
   status: 1,
   published_at: new Date().toISOString(),
-  meta_title: "The Architecture of Autonomous AI Agents 2026 | BlogVerse",
+  meta_title: "The Sacred Art of Laddu Gopal Shringar | Makhan Chor",
   meta_description:
-    "In-depth architectural breakdown of multi-agent orchestration, streaming tool execution, and modern AI engineering patterns.",
-  canonical_url: "https://blogverse.io/blogs/architecture-autonomous-ai-agents-2026",
-  og_title: "Autonomous AI Agents & Real-Time Intelligence 2026",
+    "Daily seva vidhi, pagdi styling, and authentic kundan shringar for Thakur Ji.",
+  canonical_url: "https://makhanchorladdugopal.com/blogs/sacred-art-laddu-gopal-shringar",
+  og_title: "Sacred Laddu Gopal Shringar & Seva Guide",
   og_description:
-    "How multi-agent networks and streaming execution loops are transforming modern software development.",
-  og_image: "/assets/img/featur-2.jpg",
+    "Complete devotional guide to handcrafted poshaks, pagdis, and kundan ornaments.",
+  og_image: "/assets/hero.png",
   created_at: new Date().toISOString(),
 };
 
 const sampleClient: ClientItem = {
   id: 1,
-  name: "TechSphere Insights",
-  website_name: "TechSphere Official Blog",
-  website_url: "https://techsphere.blogverse.io",
-  domain: "techsphere.blogverse.io",
-  logo: "",
-  default_meta_title: "TechSphere Insights - Cutting-Edge Technology & Architecture",
-  default_meta_description: "Deep dive articles on distributed systems, AI engineering, and modern web design.",
+  name: "Makhan Chor Editorial",
+  website_name: "Makhan Chor Official Store",
+  website_url: "https://makhanchorladdugopal.com",
+  domain: "makhanchorladdugopal.com",
+  logo: "/assets/logo.png",
+  default_meta_title: "Makhan Chor - Handcrafted Laddu Gopal Poshak & Shringar",
+  default_meta_description: "Devotional poshak, pagdi, and kundan collections for Krishna Bhakts.",
   status: 1,
 };
+
 
 export default function BlogPreview({ blogId, slug }: BlogPreviewProps) {
   const { token } = useAuth();
@@ -474,7 +475,7 @@ export default function BlogPreview({ blogId, slug }: BlogPreviewProps) {
                     </div>
                     <div className="p-3">
                       <p className="text-[10px] uppercase tracking-wider text-gray-400 truncate mb-0.5">
-                        {client?.domain || "BLOGVERSE.IO"}
+                        {client?.domain || "MAKHANCHORLADDUGOPAL.COM"}
                       </p>
                       <h4 className="text-xs font-bold text-gray-900 dark:text-white line-clamp-1">
                         {blog.og_title || blog.meta_title || blog.title}

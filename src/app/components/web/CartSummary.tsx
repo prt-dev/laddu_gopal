@@ -1,36 +1,36 @@
+import Link from "next/link";
+
 export default function CartSummary() {
   return (
-    <div className="row g-4 justify-content-end">
-      <div className="col-8" />
-      <div className="col-sm-8 col-md-7 col-lg-6 col-xl-4">
-        <div className="bg-light rounded">
-          <div className="p-4">
-            <h1 className="display-6 mb-4">
-              Cart <span className="fw-normal">Total</span>
-            </h1>
-            <div className="d-flex justify-content-between mb-4">
-              <h5 className="mb-0 me-4">Subtotal:</h5>
-              <p className="mb-0">₹547.00</p>
-            </div>
-            <div className="d-flex justify-content-between">
-              <h5 className="mb-0 me-4">Delivery</h5>
-              <div>
-                <p className="mb-0 text-success fw-bold">Instant Digital Access (Free)</p>
-              </div>
-            </div>
-            <p className="mb-0 text-end text-muted small mt-1">PDF, EPUB &amp; GitHub repo access via email.</p>
+    <div className="mt-6 flex justify-end">
+      <div className="w-full sm:w-80 rounded border border-[#fff0ad] bg-[#fff0ad] p-5">
+        <h3 className="heading-font text-lg font-bold text-[#d20b4f] mb-3 border-b border-[#d20b4f]/20 pb-2">
+          Cart Total
+        </h3>
+
+        <div className="space-y-2 text-xs sm:text-sm text-black font-bold">
+          <div className="flex justify-between">
+            <span>Subtotal:</span>
+            <span>₹849.00</span>
           </div>
-          <div className="py-4 mb-4 border-top border-bottom d-flex justify-content-between">
-            <h5 className="mb-0 ps-4 me-4">Total</h5>
-            <p className="mb-0 pe-4 fw-bold text-primary fs-4">₹1,597.00</p>
+
+          <div className="flex justify-between">
+            <span>Delivery:</span>
+            <span>Free</span>
           </div>
-          <a
-            href="/checkout"
-            className="btn border-secondary rounded-pill px-4 py-3 text-primary text-uppercase mb-4 ms-4 d-inline-block fw-bold"
-          >
-            Proceed to Checkout
-          </a>
+
+          <div className="border-t border-[#d20b4f]/20 pt-2 flex justify-between items-center text-sm">
+            <span className="text-black">Total:</span>
+            <span className="text-[#d20b4f] text-base">₹849.00</span>
+          </div>
         </div>
+
+        <Link
+          href="/checkout"
+          className="mt-4 block w-full rounded bg-[#d20b4f] py-2 text-center text-sm font-bold text-black transition hover:bg-[#b80943] no-underline"
+        >
+          Proceed to Checkout
+        </Link>
       </div>
     </div>
   );

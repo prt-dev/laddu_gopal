@@ -3,9 +3,10 @@ import WebUserLoginPageComponent from "@/app/components/web/auth/WebUserLoginPag
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Sign In | BlogVerse",
-  description: "Sign in to your BlogVerse account to manage your stories, bookmarks, and author profile.",
+  title: "Sign In | Makhan Chor",
+  description: "Sign in to your Makhan Chor devotee account to manage your orders and seva.",
 };
+
 
 export default function WebUserLoginPage() {
   return <WebUserLoginPageComponent />;

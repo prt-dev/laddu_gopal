@@ -4,9 +4,10 @@ import Link from "next/link";
 import ClientList from "@/app/components/admin/ClientList";
 
 export const metadata: Metadata = {
-  title: "Clients | BlogVerse Admin",
+  title: "Clients | Makhan Chor Admin",
   description: "Manage client brands and domains",
 };
+
 
 export default function AdminClientsPage() {
   return (

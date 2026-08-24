@@ -3,9 +3,10 @@ import type { Metadata } from "next";
 import ProductForm from "@/app/components/admin/ProductForm";
 
 export const metadata: Metadata = {
-  title: "Edit Product | BlogVerse Admin",
+  title: "Edit Product | Makhan Chor Admin",
   description: "Update product details and inventory",
 };
+
 
 interface EditProductPageProps {
   params: Promise<{ id: string }>;

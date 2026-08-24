@@ -7,7 +7,7 @@ export const metadata: Metadata = {
     default: siteConfig.title,
     template: `%s | ${siteConfig.name}`,
   },
-  description: "BlogVerse - Modern blogging and content publishing platform for writers, creators, and readers.",
+  description: "Makhan Chor - Supplying handcrafted Laddu Gopal Poshak, Pagdi, Kundan Shringar and devotional accessories all over the globe to Krishna Bhakts.",
   icons: {
     icon: siteConfig.favicon,
     shortcut: siteConfig.favicon,
@@ -22,7 +22,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Bubblegum+Sans&family=Nunito:wght@400;500;600;700;800&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="bg-white text-black antialiased">{children}</body>
     </html>
   );
-}
+}

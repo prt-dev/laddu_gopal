@@ -3,9 +3,10 @@ import WebUserForgotPasswordComponent from "@/app/components/web/auth/WebUserFor
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Reset Password | BlogVerse",
-  description: "Reset your BlogVerse account password.",
+  title: "Reset Password | Makhan Chor",
+  description: "Reset your Makhan Chor devotee account password.",
 };
+
 
 export default function WebUserForgotPasswordPage() {
   return <WebUserForgotPasswordComponent />;

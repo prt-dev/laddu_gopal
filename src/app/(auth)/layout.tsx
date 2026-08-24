@@ -6,9 +6,10 @@ import { AuthProvider } from "@/app/context/AuthContext";
 import ProtectedRoute from "../context/ProtectedRoute";
 
 export const metadata: Metadata = {
-  title: "Admin Portal | BlogVerse",
-  description: "Admin authentication portal for BlogVerse Content Management System",
+  title: "Admin Portal | Makhan Chor",
+  description: "Admin authentication portal for Makhan Chor Store & CMS",
 };
+
 
 export default function LoginLayout({ children }: { children: React.ReactNode }) {
   return (

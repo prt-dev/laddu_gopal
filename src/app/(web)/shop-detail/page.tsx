@@ -5,32 +5,29 @@ import DetailSidebar from "../../components/web/DetailSidebar";
 import RelatedProducts from "../../components/web/RelatedProducts";
 
 export const metadata: Metadata = {
-  title: "Publication Detail | BlogVerse",
+  title: "Laddu Gopal Poshak Detail | Makhan Chor",
   description:
-    "View full details, chapters, reviews, and related publications on BlogVerse.",
+    "View full details, size options, embroidery specifications, and devotee reviews for handcrafted Laddu Gopal items.",
 };
 
 export default function ShopDetailPage() {
   return (
     <>
       <PageHeader
-        title="Publication Detail"
+        title="Item Details &amp; Specifications"
         breadcrumbs={[
           { label: "Home", href: "/" },
-          { label: "Publications", href: "/shop" },
-          { label: "Publication Detail" },
+          { label: "Collection", href: "/shop" },
+          { label: "Poshak Details" },
         ]}
       />
 
-      {/* Single Product Section */}
-      <div className="container-fluid py-5 mt-5">
-        <div className="container py-5">
-          <div className="row g-4 mb-5">
-            <ProductDetail />
-            <DetailSidebar />
-          </div>
-          <RelatedProducts />
+      <div className="mx-auto max-w-[1100px] px-5 py-10">
+        <div className="flex flex-col lg:flex-row gap-8 mb-10">
+          <ProductDetail />
+          <DetailSidebar />
         </div>
+        <RelatedProducts />
       </div>
     </>
   );

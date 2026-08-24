@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { siteConfig } from "@/app/config/site";
+import { isValidEmail } from "@/app/utils/utils";
 
 export default function WebUserForgotPasswordComponent() {
   const [email, setEmail] = useState("");
@@ -10,63 +11,72 @@ export default function WebUserForgotPasswordComponent() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!isValidEmail(email)) {
+      alert("Please enter a valid email address.");
+      return;
+    }
+
     setIsSubmitted(true);
   };
 
   return (
-    <div className="w-100 px-3" style={{ maxWidth: "480px" }}>
-      <div className="card border-0 shadow-lg rounded-4 overflow-hidden">
-        <div className="card-body p-4 p-sm-5 bg-white">
-          <div className="text-center mb-4">
-            <Link href="/" className="d-inline-block mb-3 text-decoration-none">
-              <span className="h3 fw-bold text-primary mb-0">{siteConfig.name}</span>
-            </Link>
-            <h4 className="fw-bold text-dark mb-1">Reset Password</h4>
-            <p className="text-muted small">Enter your email and we'll send reset instructions</p>
-          </div>
+    <div className="w-full px-3 mx-auto" style={{ maxWidth: "440px" }}>
+      <div className="rounded border border-[#fff0ad] bg-[#fff0ad] p-6 sm:p-8 shadow-xs">
+        <div className="text-center mb-6">
+          <Link href="/" className="inline-block mb-2 no-underline">
+            <img src="/assets/logo.png" alt={siteConfig.name} className="w-32 h-auto mx-auto" />
+          </Link>
+          <h2 className="heading-font text-xl font-bold text-[#d20b4f] mb-1">
+            Reset Password
+          </h2>
+          <p className="text-xs font-bold text-black">
+            Enter your email to receive a password reset link
+          </p>
+        </div>
 
-          {isSubmitted ? (
-            <div className="alert alert-success text-center p-3 rounded-3" role="alert">
-              <i className="fas fa-check-circle fa-2x mb-2 d-block text-success"></i>
-              <strong>Reset Link Sent!</strong>
-              <p className="small mb-0 mt-1">If an account exists for {email}, a password reset link has been emailed.</p>
-              <Link href="/login" className="btn btn-outline-success btn-sm mt-3 fw-bold">
-                Return to Login
-              </Link>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit}>
-              <div className="mb-4">
-                <label className="form-label text-dark font-weight-bold small">Email Address</label>
-                <div className="input-group">
-                  <span className="input-group-text bg-white text-muted border-end-0">
-                    <i className="fas fa-envelope"></i>
-                  </span>
-                  <input
-                    type="email"
-                    className="form-control border-start-0 ps-0"
-                    placeholder="name@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-
-              <button type="submit" className="btn btn-primary w-100 py-2.5 rounded-pill fw-bold text-white shadow-sm">
-                <i className="fas fa-paper-plane me-2"></i> Send Reset Link
-              </button>
-            </form>
-          )}
-
-          <div className="text-center mt-4 pt-3 border-top">
-            <p className="text-muted small mb-0">
-              Remembered your password?{" "}
-              <Link href="/login" className="text-primary fw-bold text-decoration-none ms-1">
-                Sign In Here
-              </Link>
+        {isSubmitted ? (
+          <div className="rounded bg-white p-4 text-center border border-gray-200">
+            <p className="text-xs font-bold text-black mb-3">
+              We have sent password reset instructions to <strong>{email}</strong>.
             </p>
+            <Link
+              href="/login"
+              className="rounded bg-[#d20b4f] px-5 py-1.5 text-xs font-bold text-black transition hover:bg-[#b80943] no-underline inline-block"
+            >
+              Back to Login
+            </Link>
           </div>
+        ) : (
+          <form onSubmit={handleSubmit} noValidate className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-black mb-1">Email Address</label>
+              <input
+                type="email"
+                className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-black focus:border-[#d20b4f] focus:outline-hidden"
+                placeholder="name@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="w-full rounded bg-[#d20b4f] py-2 text-sm font-bold text-black transition hover:bg-[#b80943] border-0 cursor-pointer"
+            >
+              Send Reset Link
+            </button>
+          </form>
+        )}
+
+        <div className="text-center mt-6 pt-4 border-t border-[#d20b4f]/20">
+          <p className="text-xs font-bold text-black mb-0">
+            Remember your password?{" "}
+            <Link href="/login" className="text-[#d20b4f] font-bold no-underline ml-1">
+              Log In
+            </Link>
+          </p>
         </div>
       </div>
     </div>

@@ -12,57 +12,54 @@ import { ClientItem, getClientById } from "@/app/services/clientService";
 const sampleBlog: BlogItem = {
   id: 1,
   client_id: 1,
-  title: "The Architecture of Autonomous AI Agents & Real-Time Systems in 2026",
-  slug: "architecture-autonomous-ai-agents-2026",
+  title: "The Sacred Art of Laddu Gopal Shringar: Daily Seva Vidhi & Kundan Ornaments",
+  slug: "sacred-art-laddu-gopal-shringar-seva-vidhi",
   excerpt:
-    "An in-depth exploration of multi-agent orchestration, streaming tool execution, and self-correcting neural loops shaping future software development.",
+    "Discover how devotees lovingly adorn Thakur Ji with handcrafted Zari poshaks, embroidered pagdis, and radiant Kundan ornaments for daily seva and Janmashtami celebrations.",
   content: `
     <p class="lead">
-      Software engineering in 2026 is experiencing an extraordinary paradigm shift. With autonomous agent frameworks maturing and real-time streaming inference reaching sub-second milestones, developers are transitioning from monolithic REST architectures to event-driven multi-agent networks.
+      In Sanatan tradition, serving <strong>Laddu Gopal Ji</strong> is not merely a ritual, but an intimate expression of Vatsalya Bhava (parental affection and devotion). Adorning Thakur Ji each morning brings spiritual bliss, peace, and abundance into our homes.
     </p>
 
-    <h3 class="fw-bold mt-4 mb-3 text-dark">1. Multi-Agent Orchestration &amp; Distributed Memory</h3>
+    <h3 class="fw-bold mt-4 mb-3 text-dark">1. Choosing the Right Poshak &amp; Fabric according to Seasons</h3>
     <p>
-      Modern systems decompose complex business logic across swarms of specialized agent personas. Rather than overloading single model contexts, deterministic supervisor agents route subtasks to focused execution nodes with isolated memory partitions.
-    </p>
-    <p>
-      Context compression techniques and vector indexing ensure agents maintain durable conversational memory across millions of state transitions without losing precision.
+      During summer months, light cotton and silk fabrics in soothing pastels keep Bal Gopal comfortable. For festive occasions like Janmashtami, Radhashtami, and Diwali, rich velvet and zardozi embellished poshaks with delicate brocade borders are traditionally offered.
     </p>
 
-    <div class="my-4 p-4 rounded bg-light border-start border-4 border-primary">
-      <h5 class="fw-bold text-dark mb-1">Key Performance Metric</h5>
-      <p class="mb-0 text-muted">
-        Multi-agent decomposition workflows reduce hallucination rates by over 64% while maintaining sub-second intermediate token streaming.
+    <div class="my-4 p-4 rounded-2xl bg-[#fff0ad]/30 border border-[#fff0ad]">
+      <h5 class="fw-bold text-[#d20b4f] mb-1">✨ Devotional Seva Tip</h5>
+      <p class="mb-0 text-gray-800">
+        Always ensure poshak sizes correspond exactly to your Laddu Gopal idol (Size 0 for 2.5", Size 2 for 3.5", Size 4 for 4.5", up to Size 12) for graceful fitting and comfort.
       </p>
     </div>
 
-    <h3 class="fw-bold mt-4 mb-3 text-dark">2. Sandboxed Tool Execution &amp; Self-Correction</h3>
+    <h3 class="fw-bold mt-4 mb-3 text-dark">2. The Grandeur of Pagdi &amp; Peacock Feather (Mor Pankh)</h3>
     <p>
-      Autonomous agents validate their work before presenting it to users. When an agent writes code or performs schema migrations, it executes test suites inside isolated WASM or micro-VM containers, inspecting stderr and automatically refining solutions until all assertions pass.
+      The crown or Pagdi symbolizes the royal sovereignty of Shri Krishna. A delicately sculpted Pagdi studded with micro-pearls and centered with a pure Mor Pankh elevates the divine beauty of Bal Gopal.
     </p>
 
-    <h3 class="fw-bold mt-4 mb-3 text-dark">3. The Future: Next.js Streaming SSR &amp; Edge Delivery</h3>
+    <h3 class="fw-bold mt-4 mb-3 text-dark">3. Adorning with Kundan Haar, Bangles &amp; Bansuri</h3>
     <p>
-      By marrying agent intelligence with Next.js 15 Server Components and Edge routing, readers experience zero-latency interaction models where analytical charts, markdown tables, and code snippets stream dynamically into view.
+      No shringar is complete without the sweet golden flute (Bansuri), gleaming Kundan neckpieces, and tiny hand-painted meenakari bangles. At Makhan Chor, every piece is curated with pure love as if offering to our own beloved Thakur Ji.
     </p>
   `,
-  featured_image: "/assets/img/featur-2.jpg",
+  featured_image: "/assets/hero.png",
   status: 1,
   published_at: new Date().toISOString(),
-  meta_title: "The Architecture of Autonomous AI Agents 2026 | BlogVerse",
-  meta_description: "Learn how multi-agent networks and sandboxed tool execution are transforming modern software development.",
+  meta_title: "The Sacred Art of Laddu Gopal Shringar | Makhan Chor",
+  meta_description: "Learn traditional Laddu Gopal seva vidhi, poshak sizing, and shringar tips.",
 };
 
 const sampleClient: ClientItem = {
   id: 1,
-  name: "TechSphere Insights",
-  website_name: "TechSphere Official Blog",
-  website_url: "https://techsphere.blogverse.io",
-  domain: "techsphere.blogverse.io",
-  logo: "",
-  default_meta_title: "TechSphere Insights - Cutting-Edge Technology & Architecture",
+  name: "Makhan Chor Editorial",
+  website_name: "Makhan Chor Devotional Stories",
+  website_url: "https://makhanchorladdugopal.com",
+  domain: "makhanchorladdugopal.com",
+  logo: "/assets/logo.png",
+  default_meta_title: "Makhan Chor Devotional Guides & Seva Vidhi",
   default_meta_description:
-    "Deep dive articles on distributed systems, AI engineering, and modern web design.",
+    "Inspiring stories and guides for Krishna devotees worldwide.",
   status: 1,
 };
 
@@ -96,9 +93,8 @@ function BlogPreviewContent() {
           }
         }
 
-        // Fetch recent blogs for sidebar
         const allBlogs = await getBlogs({ limit: 4 }, "").catch(() => ({ blogs: [] }));
-        if (allBlogs?.blogs) {
+        if (allBlogs?.blogs && allBlogs.blogs.length > 0) {
           setRecentBlogs(allBlogs.blogs);
         }
       } catch (err) {
@@ -114,7 +110,7 @@ function BlogPreviewContent() {
   return (
     <>
       <PageHeader
-        title={blog.title || "Blog Preview"}
+        title={blog.title || "Devotional Blogs"}
         breadcrumbs={[
           { label: "Home", href: "/" },
           { label: "Blogs", href: "/blog-preview" },
@@ -122,13 +118,17 @@ function BlogPreviewContent() {
         ]}
       />
 
-      <div className="container-fluid py-5 mt-4">
-        <div className="container py-4">
-          <div className="row g-4">
+      <div className="mx-auto max-w-[1100px] px-5 py-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-8">
             <BlogDetail blog={blog} client={client} />
+          </div>
+          <div className="lg:col-span-4">
             <BlogSidebar client={client} recentBlogs={recentBlogs} />
           </div>
+        </div>
 
+        <div className="mt-12">
           <RelatedBlogs blogs={recentBlogs} />
         </div>
       </div>
@@ -141,7 +141,7 @@ export default function BlogPreviewPage() {
     <Suspense
       fallback={
         <div className="container py-5 text-center">
-          <div className="spinner-border text-primary" role="status">
+          <div className="spinner-border text-[#d20b4f]" role="status">
             <span className="visually-hidden">Loading blog preview...</span>
           </div>
         </div>

@@ -3,9 +3,10 @@ import ForgotPasswordPageComponent from "@/app/components/admin/ForgotPasswordPa
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Forgot Password | BlogVerse Admin Dashboard",
-  description: "Forgot password recovery page for BlogVerse Admin Dashboard",
+  title: "Forgot Password | Makhan Chor Admin Dashboard",
+  description: "Forgot password recovery page for Makhan Chor Admin Dashboard",
 };
+
 
 export default function AdminForgotPasswordPage() {
   return <ForgotPasswordPageComponent />;

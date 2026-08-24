@@ -4,9 +4,10 @@ import Link from "next/link";
 import ProductList from "@/app/components/admin/ProductList";
 
 export const metadata: Metadata = {
-  title: "Products & Publications | BlogVerse Admin",
-  description: "Manage products and inventory",
+  title: "Products & Shringar | Makhan Chor Admin",
+  description: "Manage Laddu Gopal products and inventory",
 };
+
 
 export default function AdminProductsPage() {
   return (

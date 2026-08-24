@@ -3,9 +3,10 @@ import WebUserRegisterPageComponent from "@/app/components/web/auth/WebUserRegis
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Create Account | BlogVerse",
-  description: "Register a new account at BlogVerse to publish articles, bookmark stories, and connect with writers.",
+  title: "Create Account | Makhan Chor",
+  description: "Register a new devotee account at Makhan Chor to manage orders and seva.",
 };
+
 
 export default function WebUserRegisterPage() {
   return <WebUserRegisterPageComponent />;

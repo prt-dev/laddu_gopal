@@ -1,90 +1,112 @@
-const cartItems = [
+"use client";
+
+import React, { useState } from "react";
+
+const initialCartItems = [
   {
-    img: "/assets/img/featur-1.jpg",
-    name: "Modern Web Architecture (2026 Edition)",
-    price: "₹499.00",
-    total: "₹499.00",
+    id: 1,
+    img: "/assets/best-selling.png",
+    name: "Handmade Velvet Poshak Set (Size 4)",
+    price: 349,
+    quantity: 1,
   },
   {
-    img: "/assets/img/featur-2.jpg",
-    name: "Autonomous Agents & LLM Engineering",
-    price: "₹699.00",
-    total: "₹699.00",
+    id: 2,
+    img: "/assets/pagdi.png",
+    name: "Royal Zardozi Designer Pagdi",
+    price: 180,
+    quantity: 1,
   },
   {
-    img: "/assets/img/featur-3.jpg",
-    name: "Design Systems for Enterprise Apps",
-    price: "₹399.00",
-    total: "₹399.00",
+    id: 3,
+    img: "/assets/kundan.png",
+    name: "Pure Kundan Haar & Tilak Set",
+    price: 320,
+    quantity: 1,
   },
 ];
 
-function QuantityStepper() {
-  return (
-    <div className="input-group quantity mt-4" style={{ width: 100 }}>
-      <div className="input-group-btn">
-        <button className="btn btn-sm btn-minus rounded-circle bg-light border">
-          <i className="fa fa-minus" />
-        </button>
-      </div>
-      <input
-        type="text"
-        className="form-control form-control-sm text-center border-0"
-        defaultValue="1"
-      />
-      <div className="input-group-btn">
-        <button className="btn btn-sm btn-plus rounded-circle bg-light border">
-          <i className="fa fa-plus" />
-        </button>
-      </div>
-    </div>
-  );
-}
-
 export default function CartTable() {
+  const [items, setItems] = useState(initialCartItems);
+
+  const updateQuantity = (id: number, delta: number) => {
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.id === id) {
+          const newQty = Math.max(1, item.quantity + delta);
+          return { ...item, quantity: newQty };
+        }
+        return item;
+      })
+    );
+  };
+
+  const removeItem = (id: number) => {
+    setItems((prev) => prev.filter((item) => item.id !== id));
+  };
+
   return (
     <>
-      {/* Cart Items Table */}
-      <div className="table-responsive">
-        <table className="table">
+      <div className="overflow-x-auto rounded border border-[#fff0ad] bg-white">
+        <table className="w-full text-left border-collapse">
           <thead>
-            <tr>
-              <th scope="col">Products</th>
-              <th scope="col">Name</th>
-              <th scope="col">Price</th>
-              <th scope="col">Quantity</th>
-              <th scope="col">Total</th>
-              <th scope="col">Handle</th>
+            <tr className="border-b border-[#fff0ad] bg-[#fff0ad] text-xs font-bold text-[#d20b4f]">
+              <th className="py-2.5 px-4">Item</th>
+              <th className="py-2.5 px-4">Name</th>
+              <th className="py-2.5 px-4">Price</th>
+              <th className="py-2.5 px-4">Quantity</th>
+              <th className="py-2.5 px-4">Total</th>
+              <th className="py-2.5 px-4 text-center">Remove</th>
             </tr>
           </thead>
-          <tbody>
-            {cartItems.map((item, i) => (
-              <tr key={i}>
-                <th scope="row">
-                  <div className="d-flex align-items-center">
+          <tbody className="divide-y divide-[#fff0ad] text-xs sm:text-sm text-black">
+            {items.map((item) => (
+              <tr key={item.id} className="hover:bg-[#fff0ad]/20 transition">
+                <td className="py-2.5 px-4">
+                  <div className="h-14 w-14 rounded bg-[#fff0ad] p-1 flex items-center justify-center">
                     <img
                       src={item.img}
-                      className="img-fluid me-5 rounded-circle"
-                      style={{ width: 80, height: 80, objectFit: "cover" }}
+                      className="h-full w-full object-contain"
                       alt={item.name}
                     />
                   </div>
-                </th>
-                <td>
-                  <p className="mb-0 mt-4">{item.name}</p>
                 </td>
-                <td>
-                  <p className="mb-0 mt-4">{item.price}</p>
+                <td className="py-2.5 px-4 font-bold text-black heading-font">
+                  {item.name}
                 </td>
-                <td>
-                  <QuantityStepper />
+                <td className="py-2.5 px-4 font-bold text-[#d20b4f]">
+                  ₹{item.price}
                 </td>
-                <td>
-                  <p className="mb-0 mt-4">{item.total}</p>
+                <td className="py-2.5 px-4">
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => updateQuantity(item.id, -1)}
+                      className="h-6 w-6 rounded bg-[#fff0ad] font-bold text-black hover:bg-[#d20b4f] transition flex items-center justify-center border-0 cursor-pointer text-xs"
+                      type="button"
+                    >
+                      -
+                    </button>
+                    <span className="w-6 text-center font-bold">{item.quantity}</span>
+                    <button
+                      onClick={() => updateQuantity(item.id, 1)}
+                      className="h-6 w-6 rounded bg-[#fff0ad] font-bold text-black hover:bg-[#d20b4f] transition flex items-center justify-center border-0 cursor-pointer text-xs"
+                      type="button"
+                    >
+                      +
+                    </button>
+                  </div>
                 </td>
-                <td>
-                  <button className="btn btn-md rounded-circle bg-light border mt-4">
-                    <i className="fa fa-times text-danger" />
+                <td className="py-2.5 px-4 font-bold text-black">
+                  ₹{item.price * item.quantity}
+                </td>
+                <td className="py-2.5 px-4 text-center">
+                  <button
+                    onClick={() => removeItem(item.id)}
+                    className="h-6 w-6 rounded text-red-600 hover:bg-red-50 transition border-0 bg-transparent cursor-pointer"
+                    title="Remove item"
+                    type="button"
+                  >
+                    <i className="fa fa-times" />
                   </button>
                 </td>
               </tr>
@@ -94,14 +116,14 @@ export default function CartTable() {
       </div>
 
       {/* Coupon Row */}
-      <div className="mt-5">
+      <div className="mt-5 flex flex-col sm:flex-row gap-2">
         <input
           type="text"
-          className="border-0 border-bottom rounded me-5 py-3 mb-4"
+          className="rounded border border-gray-300 px-3 py-1.5 text-xs text-black focus:border-[#d20b4f] focus:outline-hidden sm:w-60"
           placeholder="Coupon Code"
         />
         <button
-          className="btn border-secondary rounded-pill px-4 py-3 text-primary"
+          className="rounded bg-[#d20b4f] px-5 py-1.5 text-xs font-bold text-black transition hover:bg-[#b80943] border-0 cursor-pointer"
           type="button"
         >
           Apply Coupon

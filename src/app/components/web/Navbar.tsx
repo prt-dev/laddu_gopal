@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { siteConfig } from "../../config/site";
@@ -11,260 +10,238 @@ export default function Navbar() {
   const pathname = usePathname();
   const { user, isAuthenticated, logout } = useWebAuth();
   const [isNavOpen, setIsNavOpen] = useState(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   useEffect(() => {
     setIsNavOpen(false);
-    setIsDropdownOpen(false);
+    setIsUserMenuOpen(false);
   }, [pathname]);
-
-  const isDropdownActive = [
-    "/cart",
-    "/checkout",
-    "/testimonial",
-    "/404",
-  ].includes(pathname);
 
   return (
     <>
-      {/* Navbar */}
-      <div className="container-fluid fixed-top">
-        <div className="container topbar bg-primary d-none d-lg-block">
-          <div className="d-flex justify-content-between">
-            {/* <div className="top-info ps-2"> */}
-            <small className="me-3">
-              <i className="fas fa-map-marker-alt me-2 text-secondary"></i>
-              <a href="#" className="text-white">{siteConfig.address}</a>
-            </small>
-            <small className="me-3">
-              <i className="fas fa-envelope me-2 text-secondary"></i>
-              <a href={`mailto:${siteConfig.email}`} className="text-white">{siteConfig.email}</a>
-            </small>
-            <small className="me-3">
-              <i className="fas fa-phone-alt me-2 text-secondary"></i>
-              <a href={`tel:${siteConfig.phone1}`} className="text-white">{siteConfig.phone1}</a>
-            </small>
-            {/* </div> */}
-            {/* <div className="top-link pe-2">
-              <a href="#" className="text-white">
-                <small className="text-white mx-2">Privacy Policy</small>/
-              </a>
-              <a href="#" className="text-white">
-                <small className="text-white mx-2">Terms of Use</small>/
-              </a>
-              <a href="#" className="text-white">
-                <small className="text-white ms-2">Nursery Info</small>
-              </a>
-            </div> */}
-          </div>
-        </div>
-        <div className="container px-0">
-          <nav className="navbar navbar-light bg-white navbar-expand-xl">
-            <Link href="/" className="navbar-brand d-flex align-items-center gap-2 text-decoration-none">
-              <h1 className="text-primary display-6 mb-0 fw-bold d-flex align-items-center">
-                <i className="fas fa-feather-alt text-secondary me-2" style={{ fontSize: "1.75rem" }}></i>
-                <span>{siteConfig.name}</span>
-              </h1>
-            </Link>
-            <button
-              className="navbar-toggler py-2 px-3"
-              type="button"
-              onClick={() => setIsNavOpen((prev) => !prev)}
-              aria-controls="navbarCollapse"
-              aria-expanded={isNavOpen}
-              aria-label="Toggle navigation"
+      {/* ================= HEADER ================= */}
+      <header className="bg-[#fff0ad] sticky top-0 z-50 shadow-xs">
+        <div className="mx-auto flex h-[70px] max-w-[1100px] items-center justify-between px-5">
+          {/* Logo */}
+          <Link
+            href="/"
+            className="heading-font text-center text-[13px] leading-[11px] text-[#d20b4f] no-underline"
+          >
+            <img src="/assets/logo.png" alt="Logo" className="w-22 h-auto" />
+          </Link>
+
+          {/* Navigation */}
+          <nav className="hidden md:flex items-center gap-8 text-sm font-bold text-[#d20b4f]">
+            <Link
+              href="/"
+              className={`transition hover:text-black no-underline ${pathname === "/" ? "text-black" : ""
+                }`}
             >
-              <span className="fa fa-bars text-primary"></span>
+              Home
+            </Link>
+
+            <Link
+              href="/shop"
+              className={`transition hover:text-black no-underline ${pathname === "/shop" ? "text-black" : ""
+                }`}
+            >
+              Category
+            </Link>
+
+            <Link
+              href="/blog-preview"
+              className={`transition hover:text-black no-underline ${pathname === "/blog-preview" ? "text-black" : ""
+                }`}
+            >
+              Blogs
+            </Link>
+
+            <Link
+              href="/contact"
+              className={`transition hover:text-black no-underline ${pathname === "/contact" ? "text-black" : ""
+                }`}
+            >
+              Contact
+            </Link>
+          </nav>
+
+          {/* Right Action Icons & Auth */}
+          <div className="flex items-center gap-3">
+            {/* Search Icon */}
+            <button
+              onClick={() => setIsSearchOpen(true)}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#d20b4f] transition hover:bg-[#d20b4f] hover:text-black border-0 cursor-pointer shadow-xs"
+              title="Search"
+              type="button"
+            >
+              <i className="fas fa-search text-xs"></i>
             </button>
-            <div className={`navbar-collapse bg-white ${isNavOpen ? "show" : "collapse"}`} id="navbarCollapse">
-              <div className="navbar-nav mx-auto">
-                <Link
-                  href="/"
-                  className={`nav-item nav-link${pathname === "/" ? " active" : ""}`}
+
+            {/* Cart Icon */}
+            <Link
+              href="/cart"
+              className="relative flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#d20b4f] transition hover:bg-[#d20b4f] hover:text-black no-underline shadow-xs"
+              title="Cart"
+            >
+              <i className="fas fa-shopping-bag text-xs"></i>
+              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#d20b4f] text-[10px] font-bold text-black">
+                3
+              </span>
+            </Link>
+
+            {/* Auth / Account */}
+            {isAuthenticated ? (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsUserMenuOpen((prev) => !prev)}
+                  className="rounded bg-[#d20b4f] px-3 py-1 text-xs font-bold text-black transition hover:bg-[#b80943] border-0 cursor-pointer flex items-center gap-1"
                 >
-                  Home
-                </Link>
-                <Link
-                  href="/shop"
-                  className={`nav-item nav-link${pathname === "/shop" ? " active" : ""}`}
-                >
-                  Articles &amp; Guides
-                </Link>
-                <Link
-                  href="/blog-preview"
-                  className={`nav-item nav-link${pathname === "/blog-preview" ? " active" : ""}`}
-                >
-                  Blog Preview
-                </Link>
-                <Link
-                  href="/shop-detail"
-                  className={`nav-item nav-link${pathname === "/shop-detail" ? " active" : ""}`}
-                >
-                  Publications
-                </Link>
-                <div className={`nav-item dropdown ${isDropdownOpen ? "show" : ""}`}>
-                  <a
-                    href="#"
-                    className={`nav-link dropdown-toggle${isDropdownActive ? " active" : ""}`}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setIsDropdownOpen((prev) => !prev);
-                    }}
-                    aria-expanded={isDropdownOpen}
-                  >
-                    Pages
-                  </a>
-                  <div className={`dropdown-menu m-0 bg-secondary rounded-0 ${isDropdownOpen ? "show" : ""}`}>
-                    <Link
-                      href="/testimonial"
-                      className={`dropdown-item${pathname === "/testimonial" ? " active" : ""}`}
-                    >
-                      Testimonials
-                    </Link>
+                  <i className="fas fa-user-circle"></i>
+                  <span className="max-w-[70px] truncate">{user?.name || "Account"}</span>
+                  <i className="fas fa-chevron-down text-[9px]"></i>
+                </button>
+
+                {isUserMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-44 rounded-md bg-white p-2 shadow-lg border border-gray-100 z-50 text-xs">
+                    <div className="border-b border-gray-100 px-2 py-1 text-gray-500 truncate">
+                      {user?.email}
+                    </div>
                     <Link
                       href="/cart"
-                      className={`dropdown-item${pathname === "/cart" ? " active" : ""}`}
+                      className="block px-2 py-1.5 text-black hover:bg-[#fff0ad] no-underline rounded font-bold"
+                      onClick={() => setIsUserMenuOpen(false)}
                     >
-                      Cart
+                      My Cart
                     </Link>
                     <Link
                       href="/checkout"
-                      className={`dropdown-item${pathname === "/checkout" ? " active" : ""}`}
+                      className="block px-2 py-1.5 text-black hover:bg-[#fff0ad] no-underline rounded font-bold"
+                      onClick={() => setIsUserMenuOpen(false)}
                     >
                       Checkout
                     </Link>
-                    <Link
-                      href="/404"
-                      className={`dropdown-item${pathname === "/404" ? " active" : ""}`}
-                    >
-                      404 Page
-                    </Link>
-                  </div>
-                </div>
-                <Link
-                  href="/contact"
-                  className={`nav-item nav-link${pathname === "/contact" ? " active" : ""}`}
-                >
-                  Contact
-                </Link>
-              </div>
-              <div className="d-flex m-3 me-0">
-                <button
-                  className="btn-search btn border border-secondary btn-md-square rounded-circle bg-white me-4"
-                  data-bs-toggle="modal"
-                  data-bs-target="#searchModal"
-                >
-                  <i className="fas fa-search text-primary"></i>
-                </button>
-                {isAuthenticated && (
-                  <Link href="/cart" className="position-relative me-4 my-auto" title="My Cart">
-                    <i className="fa fa-shopping-bag fa-2x text-primary"></i>
-                    <span
-                      className="position-absolute bg-secondary rounded-circle d-flex align-items-center justify-content-center text-dark px-1 fw-bold"
-                      style={{ top: "-5px", left: "15px", height: "20px", minWidth: "20px", fontSize: "0.75rem" }}
-                    >
-                      3
-                    </span>
-                  </Link>
-                )}
-
-                {isAuthenticated ? (
-                  <div className="position-relative my-auto">
-                    <button
-                      className="btn btn-outline-primary rounded-pill px-3 py-2 d-flex align-items-center font-weight-bold shadow-sm"
-                      onClick={() => setIsUserMenuOpen((prev) => !prev)}
-                      type="button"
-                    >
-                      <i className="fas fa-user-circle text-primary me-2 fs-5"></i>
-                      <span className="small font-weight-bold text-dark me-1">
-                        {user?.name || "My Account"}
-                      </span>
-                      <i className="fas fa-chevron-down text-muted ms-1" style={{ fontSize: "0.75rem" }}></i>
-                    </button>
-                    {isUserMenuOpen && (
-                      <div
-                        className="dropdown-menu dropdown-menu-end show position-absolute bg-white shadow-lg rounded-3 border-0 p-2 mt-2"
-                        style={{ right: 0, top: "100%", minWidth: "180px", zIndex: 1050 }}
+                    {user?.role === "admin" && (
+                      <Link
+                        href="/admin/dashboard"
+                        className="block px-2 py-1.5 text-[#d20b4f] hover:bg-[#fff0ad] no-underline rounded font-bold"
+                        onClick={() => setIsUserMenuOpen(false)}
                       >
-                        <div className="px-3 py-2 text-muted small border-bottom mb-2 bg-light rounded-2">
-                          <span className="text-muted d-block" style={{ fontSize: "0.75rem" }}>Signed in as</span>
-                          <strong className="text-dark d-block text-truncate">{user?.email}</strong>
-                        </div>
-                        <Link
-                          href="/cart"
-                          className="dropdown-item rounded small py-2"
-                          onClick={() => setIsUserMenuOpen(false)}
-                        >
-                          <i className="fas fa-shopping-cart me-2 text-primary"></i>
-                          My Cart
-                        </Link>
-                        <Link
-                          href="/checkout"
-                          className="dropdown-item rounded small py-2"
-                          onClick={() => setIsUserMenuOpen(false)}
-                        >
-                          <i className="fas fa-credit-card me-2 text-primary"></i>
-                          Checkout
-                        </Link>
-                        {user?.role === "admin" && (
-                          <Link
-                            href="/admin/dashboard"
-                            className="dropdown-item rounded small py-2 text-purple-600 font-medium"
-                            onClick={() => setIsUserMenuOpen(false)}
-                          >
-                            <i className="fas fa-tachometer-alt me-2 text-primary"></i>
-                            Admin Dashboard
-                          </Link>
-                        )}
-                        <hr className="my-1" />
-                        <button
-                          className="dropdown-item text-danger rounded small py-2"
-                          onClick={() => {
-                            logout();
-                            setIsUserMenuOpen(false);
-                          }}
-                        >
-                          <i className="fas fa-sign-out-alt me-2"></i>
-                          Log Out
-                        </button>
-                      </div>
+                        Admin Dashboard
+                      </Link>
                     )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        logout();
+                        setIsUserMenuOpen(false);
+                      }}
+                      className="w-full text-left px-2 py-1.5 text-red-600 hover:bg-red-50 rounded font-bold border-0 bg-transparent cursor-pointer"
+                    >
+                      Log Out
+                    </button>
                   </div>
-                ) : (
-                  <Link
-                    href="/login"
-                    className="btn btn-primary rounded-pill px-3.5 py-2 text-white fw-bold my-auto d-flex align-items-center shadow-sm text-decoration-none"
-                  >
-                    <i className="fas fa-sign-in-alt me-2"></i>
-                    <span>Log In</span>
-                  </Link>
                 )}
               </div>
-            </div>
-          </nav>
-        </div>
-      </div>
+            ) : (
+              <Link
+                href="/login"
+                className="rounded bg-[#d20b4f] px-4 py-1 text-xs font-bold text-black transition hover:bg-[#b80943] no-underline"
+              >
+                Log In
+              </Link>
+            )}
 
-      {/* Search Modal */}
-      <div className="modal fade" id="searchModal" tabIndex={-1} aria-labelledby="searchModalLabel" aria-hidden="true">
-        <div className="modal-dialog modal-fullscreen">
-          <div className="modal-content rounded-0">
-            <div className="modal-header">
-              <h5 className="modal-title" id="searchModalLabel">Search by keyword</h5>
-              <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div className="modal-body d-flex align-items-center">
-              <div className="input-group w-75 mx-auto d-flex">
-                <input type="search" className="form-control p-3" placeholder="keywords" aria-describedby="search-icon-1" />
-                <span id="search-icon-1" className="input-group-text p-3">
-                  <i className="fa fa-search"></i>
-                </span>
-              </div>
-            </div>
+            {/* Mobile Hamburger Toggle */}
+            <button
+              onClick={() => setIsNavOpen((prev) => !prev)}
+              type="button"
+              className="flex md:hidden h-8 w-8 items-center justify-center rounded bg-white text-[#d20b4f] border-0 cursor-pointer"
+              aria-label="Toggle navigation"
+            >
+              <i className={`fas ${isNavOpen ? "fa-times" : "fa-bars"}`}></i>
+            </button>
           </div>
         </div>
-      </div>
+
+        {/* Mobile Nav Menu */}
+        {isNavOpen && (
+          <div className="border-t border-[#d20b4f]/20 bg-[#fff0ad] px-5 py-4 md:hidden">
+            <nav className="flex flex-col gap-3 text-sm font-bold text-[#d20b4f]">
+              <Link
+                href="/"
+                className="transition hover:text-black no-underline"
+                onClick={() => setIsNavOpen(false)}
+              >
+                Home
+              </Link>
+              <Link
+                href="/shop"
+                className="transition hover:text-black no-underline"
+                onClick={() => setIsNavOpen(false)}
+              >
+                Category
+              </Link>
+              <Link
+                href="/blog-preview"
+                className="transition hover:text-black no-underline"
+                onClick={() => setIsNavOpen(false)}
+              >
+                Blogs
+              </Link>
+              <Link
+                href="/contact"
+                className="transition hover:text-black no-underline"
+                onClick={() => setIsNavOpen(false)}
+              >
+                Contact
+              </Link>
+            </nav>
+          </div>
+        )}
+      </header>
+
+      {/* Search Modal */}
+      {isSearchOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl border border-[#fff0ad]">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="heading-font text-lg font-bold text-[#d20b4f]">
+                Search Items
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsSearchOpen(false)}
+                className="text-black hover:text-[#d20b4f] border-0 bg-transparent text-xl font-bold cursor-pointer"
+              >
+                &times;
+              </button>
+            </div>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                setIsSearchOpen(false);
+                window.location.href = "/shop";
+              }}
+              className="flex gap-2"
+            >
+              <input
+                type="text"
+                placeholder="Search Pagdi, Kundan, Poshak..."
+                className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-[#d20b4f] focus:outline-hidden"
+                autoFocus
+              />
+              <button
+                type="submit"
+                className="rounded bg-[#d20b4f] px-4 py-2 text-sm font-bold text-black hover:bg-[#b80943] transition border-0 cursor-pointer"
+              >
+                Search
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   );
 }

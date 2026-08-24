@@ -1,153 +1,93 @@
 const orderItems = [
-  { img: "/assets/img/featur-1.jpg", name: "Modern Web Architecture (2026 Edition)", price: "₹499.00", qty: 1, total: "₹499.00" },
-  { img: "/assets/img/featur-2.jpg", name: "Autonomous Agents & LLM Engineering", price: "₹699.00", qty: 1, total: "₹699.00" },
-  { img: "/assets/img/featur-3.jpg", name: "Design Systems for Enterprise Apps", price: "₹399.00", qty: 1, total: "₹399.00" },
-];
-
-const paymentMethods = [
-  {
-    id: "Transfer-1", name: "Transfer", label: "Instant UPI / Net Banking",
-    description: "Pay securely via Google Pay, PhonePe, Paytm, or direct Net Banking."
-  },
-  {
-    id: "Card-1", name: "Card", label: "Credit / Debit Card (Visa, MasterCard, Amex)",
-    description: "Encrypted 256-bit SSL transaction for global cards."
-  },
-  { id: "PayPal-1", name: "PayPal", label: "PayPal / International Payments" },
+  { img: "/assets/best-selling.png", name: "Handmade Velvet Poshak (Size 4)", price: "₹349.00", qty: 1, total: "₹349.00" },
+  { img: "/assets/pagdi.png", name: "Royal Zardozi Pagdi", price: "₹180.00", qty: 1, total: "₹180.00" },
+  { img: "/assets/kundan.png", name: "Pure Kundan Haar & Tilak Set", price: "₹320.00", qty: 1, total: "₹320.00" },
 ];
 
 export default function CheckoutOrderSummary() {
   return (
-    <div className="col-md-12 col-lg-6 col-xl-5">
+    <div className="w-full lg:w-5/12 rounded border border-[#fff0ad] bg-[#fff0ad] p-5 sm:p-6">
+      <h3 className="heading-font text-lg font-bold text-[#d20b4f] mb-4 border-b border-[#d20b4f]/20 pb-2">
+        Order Summary
+      </h3>
 
-      {/* Order summary table */}
-      <div className="table-responsive">
-        <table className="table">
-          <thead>
-            <tr>
-              <th scope="col">Products</th>
-              <th scope="col">Name</th>
-              <th scope="col">Price</th>
-              <th scope="col">Qty</th>
-              <th scope="col">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {orderItems.map((item, i) => (
-              <tr key={i}>
-                <th scope="row">
-                  <div className="d-flex align-items-center mt-2" style={{ width: 60, height: 60, overflow: "hidden" }}>
-                    <img
-                      src={item.img}
-                      className="img-fluid rounded-circle w-100 h-100"
-                      style={{ objectFit: "cover" }}
-                      alt={item.name}
-                    />
-                  </div>
-                </th>
-                <td className="py-4">{item.name}</td>
-                <td className="py-4">{item.price}</td>
-                <td className="py-4">{item.qty}</td>
-                <td className="py-4">{item.total}</td>
-              </tr>
-            ))}
+      {/* Items list */}
+      <div className="space-y-3 divide-y divide-[#d20b4f]/10">
+        {orderItems.map((item, i) => (
+          <div key={i} className="flex items-center justify-between pt-2">
+            <div className="flex items-center gap-2">
+              <div className="h-10 w-10 rounded bg-white p-1 flex items-center justify-center">
+                <img
+                  src={item.img}
+                  className="h-full w-full object-contain"
+                  alt={item.name}
+                />
+              </div>
+              <div>
+                <h6 className="heading-font text-xs font-bold text-black mb-0">
+                  {item.name}
+                </h6>
+                <span className="text-[10px] text-black">Qty: {item.qty}</span>
+              </div>
+            </div>
+            <span className="text-xs font-bold text-[#d20b4f]">
+              {item.total}
+            </span>
+          </div>
+        ))}
+      </div>
 
-            {/* Subtotal row */}
-            <tr>
-              <th scope="row" />
-              <td className="py-4" />
-              <td className="py-4" />
-              <td className="py-4">
-                <p className="mb-0 text-dark py-2">Subtotal</p>
-              </td>
-              <td className="py-4">
-                <div className="py-2 border-bottom border-top">
-                  <p className="mb-0 text-dark font-weight-bold">₹2,508.00</p>
-                </div>
-              </td>
-            </tr>
-
-            {/* Shipping options row */}
-            <tr>
-              <th scope="row" />
-              <td className="py-4">
-                <p className="mb-0 text-dark py-2">Shipping</p>
-              </td>
-              <td colSpan={3} className="py-4">
-                {[
-                  { id: "Shipping-1", label: "Instant Digital Delivery: Free" },
-                  { id: "Shipping-2", label: "Include Physical Print Edition: +₹199.00" },
-                ].map((opt) => (
-                  <div className="form-check text-start" key={opt.id}>
-                    <input
-                      type="checkbox"
-                      className="form-check-input bg-primary border-0"
-                      id={opt.id}
-                      name="Shipping-1"
-                      value="Shipping"
-                    />
-                    <label className="form-check-label" htmlFor={opt.id}>
-                      {opt.label}
-                    </label>
-                  </div>
-                ))}
-              </td>
-            </tr>
-
-            {/* Total row */}
-            <tr>
-              <th scope="row" />
-              <td className="py-4">
-                <p className="mb-0 text-dark text-uppercase py-2 fw-bold">TOTAL</p>
-              </td>
-              <td className="py-4" />
-              <td className="py-4" />
-              <td className="py-4">
-                <div className="py-2 border-bottom border-top">
-                  <p className="mb-0 text-primary fw-bold fs-5">₹2,508.00</p>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      {/* Price breakdown */}
+      <div className="mt-4 border-t border-[#d20b4f]/20 pt-3 space-y-1.5 text-xs text-black font-bold">
+        <div className="flex justify-between">
+          <span>Subtotal:</span>
+          <span>₹849.00</span>
+        </div>
+        <div className="flex justify-between">
+          <span>Delivery:</span>
+          <span>Free</span>
+        </div>
+        <div className="border-t border-[#d20b4f]/20 pt-2 flex justify-between items-center text-sm">
+          <span className="text-black">Total:</span>
+          <span className="text-[#d20b4f] text-base">₹849.00</span>
+        </div>
       </div>
 
       {/* Payment methods */}
-      {paymentMethods.map((method) => (
-        <div
-          key={method.id}
-          className="row g-4 text-center align-items-center justify-content-center border-bottom py-3"
-        >
-          <div className="col-12">
-            <div className="form-check text-start my-3">
-              <input
-                type="checkbox"
-                className="form-check-input bg-primary border-0"
-                id={method.id}
-                name={method.name}
-                value={method.name}
-              />
-              <label className="form-check-label" htmlFor={method.id}>
-                {method.label}
-              </label>
-            </div>
-            {method.description && (
-              <p className="text-start text-dark">{method.description}</p>
-            )}
-          </div>
-        </div>
-      ))}
+      <div className="mt-6 space-y-2">
+        <h4 className="heading-font text-xs font-bold text-[#d20b4f] mb-2">
+          Payment Method :
+        </h4>
+
+        {[
+          { id: "upi", label: "Instant UPI (Google Pay, PhonePe, Paytm, QR)" },
+          { id: "card", label: "Credit / Debit Card / Net Banking" },
+          { id: "cod", label: "Cash on Delivery (COD)" },
+        ].map((m, idx) => (
+          <label
+            key={m.id}
+            className="flex items-center gap-2 rounded bg-white p-2 text-xs font-bold text-black cursor-pointer"
+          >
+            <input
+              type="radio"
+              name="payment"
+              defaultChecked={idx === 0}
+              className="text-[#d20b4f]"
+            />
+            <span>{m.label}</span>
+          </label>
+        ))}
+      </div>
 
       {/* Place Order button */}
-      <div className="row g-4 text-center align-items-center justify-content-center pt-4">
+      <div className="mt-6">
         <button
           type="button"
-          className="btn border-secondary py-3 px-4 text-uppercase w-100 text-primary"
+          className="w-full rounded bg-[#d20b4f] py-2.5 text-center text-sm font-bold text-black transition hover:bg-[#b80943] border-0 cursor-pointer"
         >
           Place Order
         </button>
       </div>
-
     </div>
   );
 }

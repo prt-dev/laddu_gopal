@@ -4,33 +4,32 @@ import BillingForm from "../../components/web/BillingForm";
 import CheckoutOrderSummary from "../../components/web/CheckoutOrderSummary";
 
 export const metadata: Metadata = {
-  title: "Checkout | BlogVerse",
+  title: "Checkout & Dispatch | Makhan Chor - Laddu Gopal",
   description:
-    "Complete your order for digital publications, guides, and premium memberships on BlogVerse.",
+    "Complete your sacred order for handcrafted Laddu Gopal poshak and devotional accessories.",
 };
 
 export default function CheckoutPage() {
   return (
     <>
       <PageHeader
-        title="Checkout"
+        title="Sacred Order Checkout"
         breadcrumbs={[
           { label: "Home", href: "/" },
-          { label: "Pages", href: "#" },
+          { label: "Cart", href: "/cart" },
           { label: "Checkout" },
         ]}
       />
 
-      {/* Checkout Section */}
-      <div className="container-fluid py-5">
-        <div className="container py-5">
-          <h1 className="mb-4">Billing details</h1>
-          <form action="#">
-            <div className="row g-5">
-              <BillingForm />
-              <CheckoutOrderSummary />
-            </div>
-          </form>
+      <div className="mx-auto max-w-[1100px] px-5 py-10">
+        <div className="flex flex-col lg:flex-row gap-8">
+          <div className="w-full lg:w-7/12">
+            <h2 className="heading-font text-2xl font-bold text-gray-900 mb-6">
+              Devotee Delivery Address
+            </h2>
+            <BillingForm />
+          </div>
+          <CheckoutOrderSummary />
         </div>
       </div>
     </>
