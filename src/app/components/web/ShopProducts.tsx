@@ -48,27 +48,31 @@ const products = [
 export default function ShopProducts() {
   return (
     <div className="w-full lg:w-3/4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {products.map((product, i) => (
           <div
             key={i}
             className="flex flex-col rounded border border-[#fff0ad] bg-white overflow-hidden"
           >
-            <div className="relative h-44 w-full bg-[#fff0ad]/30 p-3 flex items-center justify-center">
-              <img
-                src={product.img}
-                className="h-full w-full object-contain"
-                alt={product.name}
-              />
-              <span className="absolute top-2 left-2 rounded bg-[#d20b4f] px-2 py-0.5 text-[10px] font-bold text-black">
+            <div className="relative h-44 w-full bg-[#fff0ad]/30 p-3 flex items-center justify-center overflow-hidden">
+              <Link href="/shop-detail" className="h-full w-full flex items-center justify-center">
+                <img
+                  src={product.img}
+                  className="h-full w-full object-contain transition-transform duration-300 hover:scale-105"
+                  alt={product.name}
+                />
+              </Link>
+              <span className="absolute top-2 left-2 rounded bg-[#d20b4f] px-2 py-0.5 text-[10px] font-bold text-black pointer-events-none">
                 {product.category}
               </span>
             </div>
 
             <div className="p-4 flex flex-col flex-1">
-              <h3 className="heading-font text-sm font-bold text-black truncate mb-1" title={product.name}>
-                {product.name}
-              </h3>
+              <Link href="/shop-detail" className="no-underline text-black hover:text-[#d20b4f]">
+                <h3 className="heading-font text-sm font-bold truncate mb-1" title={product.name}>
+                  {product.name}
+                </h3>
+              </Link>
               <p className="text-xs text-black line-clamp-2 mb-3 flex-1">
                 {product.desc}
               </p>

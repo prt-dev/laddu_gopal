@@ -7,7 +7,7 @@ export default function TopSelling() {
         Our Top Selling Items
       </h2>
 
-      <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3">
+      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         <Link href="/shop-detail" className="block overflow-hidden rounded">
           <img
             src="/assets/best-selling.png"

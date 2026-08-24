@@ -66,19 +66,20 @@ export default function ShopSidebar() {
           </h4>
           <div className="space-y-3">
             {featuredProducts.map((p, i) => (
-              <div
+              <Link
                 key={i}
-                className="flex items-center gap-2 rounded border border-[#fff0ad] p-2"
+                href="/shop-detail"
+                className="flex items-center gap-2 rounded border border-[#fff0ad] p-2 no-underline text-black hover:border-[#d20b4f]/40 transition group"
               >
-                <div className="h-12 w-12 flex-shrink-0 bg-[#fff0ad] p-1 flex items-center justify-center rounded">
+                <div className="h-12 w-12 flex-shrink-0 bg-[#fff0ad] p-1 flex items-center justify-center rounded overflow-hidden">
                   <img
                     src={p.img}
-                    className="h-full w-full object-contain"
+                    className="h-full w-full object-contain transition-transform group-hover:scale-105"
                     alt={p.name}
                   />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h6 className="heading-font text-xs font-bold text-black truncate mb-0.5" title={p.name}>
+                  <h6 className="heading-font text-xs font-bold text-black truncate mb-0.5 group-hover:text-[#d20b4f]" title={p.name}>
                     {p.name}
                   </h6>
                   <div className="flex items-center gap-1.5">
@@ -86,7 +87,7 @@ export default function ShopSidebar() {
                     <span className="text-[10px] text-gray-500 line-through">{p.oldPrice}</span>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
