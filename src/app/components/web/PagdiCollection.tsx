@@ -1,44 +1,36 @@
 import Link from "next/link";
+import ProductCard from "./ProductCard";
+import { allProducts } from "@/app/data/products";
 
 export default function PagdiCollection() {
+  const pagdiProducts = allProducts.filter((p) => p.category.toLowerCase() === "pagdi");
+
   return (
     <section id="categories" className="mx-auto max-w-[1100px] px-5 py-8">
-      <h2 className="heading-font text-xl font-bold">
-        Our Pagdi Collection
-      </h2>
-
-      <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        <Link href="/shop" className="block">
-          <img
-            src="/assets/pagdi.png"
-            alt="Pagdi"
-            className="mx-auto h-[140px] w-full object-contain sm:h-[180px] transition hover:scale-105"
-          />
-        </Link>
-
-        <Link href="/shop" className="block">
-          <img
-            src="/assets/pagdi.png"
-            alt="Pagdi"
-            className="mx-auto h-[140px] w-full object-contain sm:h-[180px] transition hover:scale-105"
-          />
-        </Link>
-
-        <Link href="/shop" className="block">
-          <img
-            src="/assets/pagdi.png"
-            alt="Pagdi"
-            className="mx-auto h-[140px] w-full object-contain sm:h-[180px] transition hover:scale-105"
-          />
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="heading-font text-xl font-bold text-black mb-0">
+          Our Pagdi Collection
+        </h2>
+        <Link
+          href="/shop?category=Pagdi"
+          className="text-xs font-bold text-[#d20b4f] hover:underline no-underline"
+        >
+          View All Pagdi &rarr;
         </Link>
       </div>
 
-      <div className="mt-5 flex justify-center">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 2xl:grid-cols-4 gap-3">
+        {pagdiProducts.map((product) => (
+          <ProductCard key={product.id} product={product} />
+        ))}
+      </div>
+
+      <div className="mt-6 flex justify-center">
         <Link
-          href="/shop"
-          className="rounded bg-[#d20b4f] px-6 py-2 text-sm font-bold text-black transition hover:bg-[#b80943] no-underline"
+          href="/shop?category=Pagdi"
+          className="rounded bg-[#d20b4f] px-6 py-2 text-sm font-bold text-white transition hover:bg-[#b80943] no-underline shadow-xs"
         >
-          See More
+          Explore All Pagdi
         </Link>
       </div>
     </section>

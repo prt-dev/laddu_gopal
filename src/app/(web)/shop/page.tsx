@@ -1,6 +1,8 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import PageHeader from "../../components/web/PageHeader";
 import ShopSection from "../../components/web/ShopSection";
+import Spinner from "../../components/web/Spinner";
 
 export const metadata: Metadata = {
   title: "Shop Laddu Gopal Poshak & Shringar Collection | Makhan Chor",
@@ -15,11 +17,19 @@ export default function ShopPage() {
         title="Our Divine Collection"
         breadcrumbs={[
           { label: "Home", href: "/" },
-          { label: "Categories", href: "#categories" },
+          { label: "Collection", href: "/shop" },
           { label: "All Items" },
         ]}
       />
-      <ShopSection />
+      <Suspense
+        fallback={
+          <div className="py-20 flex justify-center items-center">
+            <Spinner />
+          </div>
+        }
+      >
+        <ShopSection />
+      </Suspense>
     </>
   );
 }

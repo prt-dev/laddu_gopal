@@ -27,7 +27,7 @@ export default function DetailSidebar({ currentProductId = 1 }: DetailSidebarPro
             {categories.map((cat) => (
               <li key={cat.label}>
                 <Link
-                  href="/shop"
+                  href={`/shop?category=${encodeURIComponent(cat.filter)}`}
                   className="flex items-center justify-between text-xs font-bold text-black hover:text-[#d20b4f] transition no-underline"
                 >
                   <span>{cat.label}</span>

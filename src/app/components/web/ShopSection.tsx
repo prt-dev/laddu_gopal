@@ -1,15 +1,43 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import ShopSidebar from "./ShopSidebar";
 import ShopProducts, { defaultProducts } from "./ShopProducts";
 import { CategoryItem } from "./ShopSidebarCategories";
 
 export default function ShopSection() {
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [selectedSize, setSelectedSize] = useState<string>("");
-  const [searchQuery, setSearchQuery] = useState<string>("");
+  const searchParams = useSearchParams();
+  const initialCategory = searchParams.get("category") || "";
+  const initialSize = searchParams.get("size") || "";
+  const initialQuery = searchParams.get("q") || "";
+
+  const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory);
+  const [selectedSize, setSelectedSize] = useState<string>(initialSize);
+  const [searchQuery, setSearchQuery] = useState<string>(initialQuery);
   const [sortBy, setSortBy] = useState<string>("");
+
+  // Sync state when URL params change (e.g. from navbar, footer, or explore buttons)
+  useEffect(() => {
+    const cat = searchParams.get("category");
+    if (cat !== null) {
+      setSelectedCategory(cat);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const size = searchParams.get("size");
+    if (size !== null) {
+      setSelectedSize(size);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const q = searchParams.get("q");
+    if (q !== null) {
+      setSearchQuery(q);
+    }
+  }, [searchParams]);
 
   // Extract unique category tags dynamically from products
   const uniqueCategories: CategoryItem[] = useMemo(() => {

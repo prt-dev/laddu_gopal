@@ -1,35 +1,38 @@
 import Link from "next/link";
+import ProductCard from "./ProductCard";
+import { allProducts } from "@/app/data/products";
 
 export default function KundanCollection() {
+  const kundanProducts = allProducts.filter((p) =>
+    p.category.toLowerCase().includes("kundan")
+  );
+
   return (
     <section className="mx-auto max-w-[1100px] px-5 py-8">
-      <h2 className="heading-font text-xl font-bold">
-        Our Kundan Collection
-      </h2>
-
-      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        <Link href="/shop" className="block">
-          <img
-            src="/assets/kundan.png"
-            alt="Kundan Collection"
-            className="mx-auto h-[150px] w-full object-contain sm:h-[190px] transition hover:scale-105"
-          />
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="heading-font text-xl font-bold text-black mb-0">
+          Our Kundan Collection
+        </h2>
+        <Link
+          href="/shop?category=Kundan%20Shringar"
+          className="text-xs font-bold text-[#d20b4f] hover:underline no-underline"
+        >
+          View All Kundan &rarr;
         </Link>
+      </div>
 
-        <Link href="/shop" className="block">
-          <img
-            src="/assets/kundan.png"
-            alt="Kundan Collection"
-            className="mx-auto h-[150px] w-full object-contain sm:h-[190px] transition hover:scale-105"
-          />
-        </Link>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 2xl:grid-cols-4 gap-3">
+        {kundanProducts.map((product) => (
+          <ProductCard key={product.id} product={product} />
+        ))}
+      </div>
 
-        <Link href="/shop" className="block">
-          <img
-            src="/assets/kundan.png"
-            alt="Kundan Collection"
-            className="mx-auto h-[150px] w-full object-contain sm:h-[190px] transition hover:scale-105"
-          />
+      <div className="mt-6 flex justify-center">
+        <Link
+          href="/shop?category=Kundan%20Shringar"
+          className="rounded bg-[#d20b4f] px-6 py-2 text-sm font-bold text-white transition hover:bg-[#b80943] no-underline shadow-xs"
+        >
+          Explore All Kundan Shringar
         </Link>
       </div>
     </section>
