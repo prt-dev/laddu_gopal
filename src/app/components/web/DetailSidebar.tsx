@@ -1,25 +1,25 @@
 import Link from "next/link";
+import { allProducts } from "@/app/data/products";
+
+interface DetailSidebarProps {
+  currentProductId?: number;
+}
 
 const categories = [
-  { label: "Pagdi & Turbans", count: 24 },
-  { label: "Kundan Shringar", count: 18 },
-  { label: "Handcrafted Poshak", count: 35 },
-  { label: "Mukut & Crowns", count: 15 },
-  { label: "Flutes & Mor Pankh", count: 12 },
+  { label: "Poshak & Dresses", count: 2, filter: "Poshak" },
+  { label: "Pagdi & Turbans", count: 2, filter: "Pagdi" },
+  { label: "Kundan Shringar", count: 2, filter: "Kundan Shringar" },
+  { label: "Special Combos", count: 1, filter: "Special" },
 ];
 
-const featuredProducts = [
-  { img: "/assets/pagdi.png", name: "Royal Zardozi Pagdi", price: "₹180", oldPrice: "₹250" },
-  { img: "/assets/kundan.png", name: "Pure Kundan Haar Set", price: "₹320", oldPrice: "₹450" },
-  { img: "/assets/best-selling.png", name: "Velvet Laddu Gopal Poshak", price: "₹349", oldPrice: "₹499" },
-];
+export default function DetailSidebar({ currentProductId = 1 }: DetailSidebarProps) {
+  const featured = allProducts.filter((p) => p.id !== currentProductId).slice(0, 3);
 
-export default function DetailSidebar() {
   return (
     <div className="w-full lg:w-1/4">
       <div className="space-y-4">
         {/* Categories */}
-        <div className="rounded border border-[#fff0ad] bg-[#fff0ad] p-4">
+        <div className="rounded border border-[#fff0ad] bg-[#fff0ad] p-4 shadow-2xs">
           <h4 className="heading-font text-base font-bold text-[#d20b4f] mb-3 border-b border-[#d20b4f]/20 pb-2">
             Categories
           </h4>
@@ -39,20 +39,21 @@ export default function DetailSidebar() {
         </div>
 
         {/* Featured Items */}
-        <div className="rounded border border-[#fff0ad] bg-white p-4">
+        <div className="rounded border border-[#fff0ad] bg-white p-4 shadow-2xs">
           <h4 className="heading-font text-base font-bold text-[#d20b4f] mb-3 border-b border-[#d20b4f]/20 pb-2">
-            Related Shringar
+            Featured Seva Items
           </h4>
           <div className="space-y-3">
-            {featuredProducts.map((p, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-2 rounded border border-[#fff0ad] p-2"
+            {featured.map((p) => (
+              <Link
+                key={p.id}
+                href={`/shop-detail?id=${p.id}&size=Size%202`}
+                className="flex items-center gap-2.5 rounded border border-[#fff0ad] p-2 hover:bg-[#fff0ad]/20 transition no-underline block"
               >
-                <div className="h-12 w-12 flex-shrink-0 bg-[#fff0ad] p-1 flex items-center justify-center rounded">
+                <div className="h-12 w-12 flex-shrink-0 bg-[#fff0ad] p-1 flex items-center justify-center rounded overflow-hidden">
                   <img
                     src={p.img}
-                    className="h-full w-full object-contain"
+                    className="h-full w-full object-contain transition-transform hover:scale-105"
                     alt={p.name}
                   />
                 </div>
@@ -62,10 +63,12 @@ export default function DetailSidebar() {
                   </h6>
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs font-bold text-[#d20b4f]">{p.price}</span>
-                    <span className="text-[10px] text-gray-500 line-through">{p.oldPrice}</span>
+                    {p.oldPrice && (
+                      <span className="text-[10px] text-gray-500 line-through">{p.oldPrice}</span>
+                    )}
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>

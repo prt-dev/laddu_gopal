@@ -140,10 +140,18 @@ export default function BlogPreviewClient() {
   return (
     <Suspense
       fallback={
-        <div className="container py-5 text-center">
-          <div className="spinner-border text-[#d20b4f]" role="status">
-            <span className="visually-hidden">Loading blog preview...</span>
+        <div className="container py-12 flex flex-col items-center justify-center text-center">
+          <div className="relative flex items-center justify-center mb-3">
+            <div className="absolute -inset-3 rounded-full bg-[#fff0ad]/60 animate-pulse blur-md" />
+            <img
+              src="/assets/logo.png"
+              alt="Loading..."
+              className="relative w-24 h-auto object-contain animate-pulse"
+            />
           </div>
+          <p className="text-xs font-bold tracking-wider text-[#d20b4f] uppercase animate-pulse">
+            Loading blog preview...
+          </p>
         </div>
       }
     >

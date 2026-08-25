@@ -1,12 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
+import CartItemRow, { CartItemType } from "./CartItemRow";
 
-const initialCartItems = [
+const initialCartItems: CartItemType[] = [
   {
     id: 1,
     img: "/assets/best-selling.png",
-    name: "Handmade Velvet Poshak Set (Size 4)",
+    name: "Handmade Velvet Poshak Set",
+    size: "Size 4",
     price: 349,
     quantity: 1,
   },
@@ -14,6 +16,7 @@ const initialCartItems = [
     id: 2,
     img: "/assets/pagdi.png",
     name: "Royal Zardozi Designer Pagdi",
+    size: "Size 2",
     price: 180,
     quantity: 1,
   },
@@ -21,13 +24,14 @@ const initialCartItems = [
     id: 3,
     img: "/assets/kundan.png",
     name: "Pure Kundan Haar & Tilak Set",
+    size: "Size 0-2",
     price: 320,
     quantity: 1,
   },
 ];
 
 export default function CartTable() {
-  const [items, setItems] = useState(initialCartItems);
+  const [items, setItems] = useState<CartItemType[]>(initialCartItems);
 
   const updateQuantity = (id: number, delta: number) => {
     setItems((prev) =>
@@ -47,70 +51,35 @@ export default function CartTable() {
 
   return (
     <>
-      <div className="overflow-x-auto rounded border border-[#fff0ad] bg-white">
+      <div className="overflow-x-auto rounded border border-[#fff0ad] bg-white shadow-xs">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-[#fff0ad] bg-[#fff0ad] text-xs font-bold text-[#d20b4f]">
-              <th className="py-2.5 px-4">Item</th>
-              <th className="py-2.5 px-4">Name</th>
-              <th className="py-2.5 px-4">Price</th>
-              <th className="py-2.5 px-4">Quantity</th>
-              <th className="py-2.5 px-4">Total</th>
-              <th className="py-2.5 px-4 text-center">Remove</th>
+              <th className="py-3 px-4">Item</th>
+              <th className="py-3 px-4">Name</th>
+              <th className="py-3 px-4">Price</th>
+              <th className="py-3 px-4">Quantity</th>
+              <th className="py-3 px-4">Total</th>
+              <th className="py-3 px-4 text-center">Remove</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#fff0ad] text-xs sm:text-sm text-black">
-            {items.map((item) => (
-              <tr key={item.id} className="hover:bg-[#fff0ad]/20 transition">
-                <td className="py-2.5 px-4">
-                  <div className="h-14 w-14 rounded bg-[#fff0ad] p-1 flex items-center justify-center">
-                    <img
-                      src={item.img}
-                      className="h-full w-full object-contain"
-                      alt={item.name}
-                    />
-                  </div>
-                </td>
-                <td className="py-2.5 px-4 font-bold text-black heading-font">
-                  {item.name}
-                </td>
-                <td className="py-2.5 px-4 font-bold text-[#d20b4f]">
-                  ₹{item.price}
-                </td>
-                <td className="py-2.5 px-4">
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => updateQuantity(item.id, -1)}
-                      className="h-6 w-6 rounded bg-[#fff0ad] font-bold text-black hover:bg-[#d20b4f] transition flex items-center justify-center border-0 cursor-pointer text-xs"
-                      type="button"
-                    >
-                      -
-                    </button>
-                    <span className="w-6 text-center font-bold">{item.quantity}</span>
-                    <button
-                      onClick={() => updateQuantity(item.id, 1)}
-                      className="h-6 w-6 rounded bg-[#fff0ad] font-bold text-black hover:bg-[#d20b4f] transition flex items-center justify-center border-0 cursor-pointer text-xs"
-                      type="button"
-                    >
-                      +
-                    </button>
-                  </div>
-                </td>
-                <td className="py-2.5 px-4 font-bold text-black">
-                  ₹{item.price * item.quantity}
-                </td>
-                <td className="py-2.5 px-4 text-center">
-                  <button
-                    onClick={() => removeItem(item.id)}
-                    className="h-6 w-6 rounded text-red-600 hover:bg-red-50 transition border-0 bg-transparent cursor-pointer"
-                    title="Remove item"
-                    type="button"
-                  >
-                    <i className="fa fa-times" />
-                  </button>
+            {items.length > 0 ? (
+              items.map((item) => (
+                <CartItemRow
+                  key={item.id}
+                  item={item}
+                  onUpdateQuantity={updateQuantity}
+                  onRemove={removeItem}
+                />
+              ))
+            ) : (
+              <tr>
+                <td colSpan={6} className="py-8 text-center text-gray-500 font-bold">
+                  Your devotional basket is empty.
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

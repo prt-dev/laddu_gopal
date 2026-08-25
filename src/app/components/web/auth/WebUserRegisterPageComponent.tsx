@@ -4,15 +4,19 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { siteConfig } from "@/app/config/site";
 import { isValidEmail } from "@/app/utils/utils";
+import { useWebAuth } from "@/app/context/WebAuthContext";
 
 export default function WebUserRegisterPageComponent() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { register } = useWebAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
 
     if (!fullName.trim()) {
       alert("Please enter your full name.");
@@ -34,8 +38,20 @@ export default function WebUserRegisterPageComponent() {
       return;
     }
 
-    alert("Account registration successful! Please log in.");
-    window.location.href = "/login";
+    try {
+      setIsSubmitting(true);
+      await register({
+        name: fullName,
+        email: email,
+        password: password,
+      });
+      alert("Account registration successful! Please log in.");
+      window.location.href = "/login";
+    } catch (err: any) {
+      alert(err?.message || "Registration failed. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -58,10 +74,11 @@ export default function WebUserRegisterPageComponent() {
             <label className="block text-xs font-bold text-black mb-1">Full Name</label>
             <input
               type="text"
-              className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-black focus:border-[#d20b4f] focus:outline-hidden"
+              className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-black focus:border-[#d20b4f] focus:outline-hidden disabled:bg-gray-100 disabled:opacity-75"
               placeholder="e.g. Radhika Sharma"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
+              disabled={isSubmitting}
               required
             />
           </div>
@@ -70,10 +87,11 @@ export default function WebUserRegisterPageComponent() {
             <label className="block text-xs font-bold text-black mb-1">Email Address</label>
             <input
               type="email"
-              className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-black focus:border-[#d20b4f] focus:outline-hidden"
+              className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-black focus:border-[#d20b4f] focus:outline-hidden disabled:bg-gray-100 disabled:opacity-75"
               placeholder="name@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              disabled={isSubmitting}
               required
             />
           </div>
@@ -82,10 +100,11 @@ export default function WebUserRegisterPageComponent() {
             <label className="block text-xs font-bold text-black mb-1">Password</label>
             <input
               type="password"
-              className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-black focus:border-[#d20b4f] focus:outline-hidden"
+              className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-black focus:border-[#d20b4f] focus:outline-hidden disabled:bg-gray-100 disabled:opacity-75"
               placeholder="At least 6 characters"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              disabled={isSubmitting}
               required
             />
           </div>
@@ -94,19 +113,32 @@ export default function WebUserRegisterPageComponent() {
             <label className="block text-xs font-bold text-black mb-1">Confirm Password</label>
             <input
               type="password"
-              className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-black focus:border-[#d20b4f] focus:outline-hidden"
+              className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-black focus:border-[#d20b4f] focus:outline-hidden disabled:bg-gray-100 disabled:opacity-75"
               placeholder="Re-enter password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
+              disabled={isSubmitting}
               required
             />
           </div>
 
           <button
             type="submit"
-            className="w-full rounded bg-[#d20b4f] py-2 text-sm font-bold text-black transition hover:bg-[#b80943] border-0 cursor-pointer mt-2"
+            disabled={isSubmitting}
+            className={`w-full rounded py-2.5 text-sm font-bold border-0 transition flex items-center justify-center gap-2 mt-2 ${
+              isSubmitting
+                ? "bg-gray-400 text-white cursor-not-allowed opacity-75 shadow-none"
+                : "bg-[#d20b4f] text-white hover:bg-[#b80943] cursor-pointer shadow-xs"
+            }`}
           >
-            Create Account
+            {isSubmitting ? (
+              <>
+                <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                <span>Creating Account...</span>
+              </>
+            ) : (
+              "Create Account"
+            )}
           </button>
         </form>
 
@@ -122,3 +154,4 @@ export default function WebUserRegisterPageComponent() {
     </div>
   );
 }
+

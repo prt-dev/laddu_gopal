@@ -8,9 +8,12 @@ export default function CreateAccountPageComponent() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [agreePrivacy, setAgreePrivacy] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
     if (password !== confirmPassword) {
       alert("Passwords do not match!");
       return;
@@ -19,7 +22,16 @@ export default function CreateAccountPageComponent() {
       alert("Please agree to the privacy policy.");
       return;
     }
-    alert(`Account created for: ${email}`);
+
+    try {
+      setIsSubmitting(true);
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      alert(`Account created for: ${email}`);
+    } catch (err: any) {
+      alert(err?.message || "Failed to create account.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -53,11 +65,12 @@ export default function CreateAccountPageComponent() {
                 <label className="block text-sm">
                   <span className="text-gray-700 dark:text-gray-400">Email</span>
                   <input
-                    className="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input py-2 px-3 border border-gray-300 rounded-md"
+                    className="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input py-2 px-3 border border-gray-300 rounded-md disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:opacity-75"
                     placeholder="Jane Doe"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    disabled={isSubmitting}
                     required
                   />
                 </label>
@@ -65,11 +78,12 @@ export default function CreateAccountPageComponent() {
                 <label className="block mt-4 text-sm">
                   <span className="text-gray-700 dark:text-gray-400">Password</span>
                   <input
-                    className="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input py-2 px-3 border border-gray-300 rounded-md"
+                    className="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input py-2 px-3 border border-gray-300 rounded-md disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:opacity-75"
                     placeholder="***************"
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    disabled={isSubmitting}
                     required
                   />
                 </label>
@@ -77,11 +91,12 @@ export default function CreateAccountPageComponent() {
                 <label className="block mt-4 text-sm">
                   <span className="text-gray-700 dark:text-gray-400">Confirm password</span>
                   <input
-                    className="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input py-2 px-3 border border-gray-300 rounded-md"
+                    className="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input py-2 px-3 border border-gray-300 rounded-md disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:opacity-75"
                     placeholder="***************"
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
+                    disabled={isSubmitting}
                     required
                   />
                 </label>
@@ -93,6 +108,7 @@ export default function CreateAccountPageComponent() {
                       className="text-purple-600 form-checkbox focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:focus:shadow-outline-gray rounded"
                       checked={agreePrivacy}
                       onChange={(e) => setAgreePrivacy(e.target.checked)}
+                      disabled={isSubmitting}
                     />
                     <span className="ml-2">
                       I agree to the <span className="underline">privacy policy</span>
@@ -102,9 +118,21 @@ export default function CreateAccountPageComponent() {
 
                 <button
                   type="submit"
-                  className="block w-full px-4 py-2 mt-4 text-sm font-medium leading-5 text-center text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple"
+                  disabled={isSubmitting}
+                  className={`flex items-center justify-center gap-2 w-full px-4 py-2 mt-4 text-sm font-medium leading-5 text-center text-white transition-colors duration-150 rounded-lg ${
+                    isSubmitting
+                      ? "bg-purple-400 cursor-not-allowed opacity-75"
+                      : "bg-purple-600 border border-transparent active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple cursor-pointer"
+                  }`}
                 >
-                  Create account
+                  {isSubmitting ? (
+                    <>
+                      <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      <span>Creating account...</span>
+                    </>
+                  ) : (
+                    "Create account"
+                  )}
                 </button>
               </form>
 

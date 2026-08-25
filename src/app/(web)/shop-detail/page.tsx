@@ -1,11 +1,11 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import PageHeader from "../../components/web/PageHeader";
-import ProductDetail from "../../components/web/ProductDetail";
-import DetailSidebar from "../../components/web/DetailSidebar";
-import RelatedProducts from "../../components/web/RelatedProducts";
+import ShopDetailClient from "../../components/web/ShopDetailClient";
+import Spinner from "../../components/web/Spinner";
 
 export const metadata: Metadata = {
-  title: "Laddu Gopal Poshak Detail | Makhan Chor",
+  title: "Laddu Gopal Item Details | Makhan Chor",
   description:
     "View full details, size options, embroidery specifications, and devotee reviews for handcrafted Laddu Gopal items.",
 };
@@ -18,17 +18,19 @@ export default function ShopDetailPage() {
         breadcrumbs={[
           { label: "Home", href: "/" },
           { label: "Collection", href: "/shop" },
-          { label: "Poshak Details" },
+          { label: "Item Details" },
         ]}
       />
 
-      <div className="mx-auto max-w-[1100px] px-5 py-10">
-        <div className="flex flex-col lg:flex-row gap-8 mb-10">
-          <ProductDetail />
-          <DetailSidebar />
-        </div>
-        <RelatedProducts />
-      </div>
+      <Suspense
+        fallback={
+          <div className="py-20 flex justify-center items-center">
+            <Spinner />
+          </div>
+        }
+      >
+        <ShopDetailClient />
+      </Suspense>
     </>
   );
 }

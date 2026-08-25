@@ -28,8 +28,8 @@ interface WebAuthContextType {
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (userData: LoginCredentials) => void;
-  register: (userData: RegisterData | User) => void;
+  login: (userData: LoginCredentials) => Promise<void>;
+  register: (userData: RegisterData | User) => Promise<void>;
   logout: () => void;
   updateProfile: (partialData: Partial<User>) => void;
 }
@@ -104,11 +104,12 @@ export function WebAuthProvider({ children }: { children: ReactNode }) {
       try {
         const data = await loginApi(userData);
         setToken(data.access_token);
-        localStorage.setItem(STORAGE_KEYS.TOKEN, data.access_token);
         await getUser(data.access_token);
+        localStorage.setItem(STORAGE_KEYS.TOKEN, data.access_token);
         router.push("/");
       } catch (error) {
         console.error("Failed to login:", error);
+        throw error;
       }
     },
     [getUser, router]
@@ -124,6 +125,7 @@ export function WebAuthProvider({ children }: { children: ReactNode }) {
         });
       } catch (error) {
         console.error("Failed to register:", error);
+        throw error;
       }
     },
     [login]

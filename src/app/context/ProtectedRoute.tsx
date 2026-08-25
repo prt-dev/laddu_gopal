@@ -16,7 +16,7 @@ export default function ProtectedRoute({ children }: Props) {
 
     const isAuthPage =
         pathname === "/" ||
-        pathname === "/admin" ||
+        // pathname === "/admin" ||
         // pathname === "/register" ||
         pathname === "/forgot-password" ||
         pathname === "/admin-login" ||

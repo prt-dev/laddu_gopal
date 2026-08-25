@@ -5,10 +5,21 @@ import Link from "next/link";
 
 export default function ForgotPasswordPageComponent() {
   const [email, setEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert(`Password recovery email sent to: ${email}`);
+    if (isSubmitting) return;
+
+    try {
+      setIsSubmitting(true);
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      alert(`Password recovery email sent to: ${email}`);
+    } catch (err: any) {
+      alert(err?.message || "Failed to send recovery email.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -42,20 +53,33 @@ export default function ForgotPasswordPageComponent() {
                 <label className="block text-sm">
                   <span className="text-gray-700 dark:text-gray-400">Email</span>
                   <input
-                    className="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input py-2 px-3 border border-gray-300 rounded-md"
+                    className="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input py-2 px-3 border border-gray-300 rounded-md disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:opacity-75"
                     placeholder="Jane Doe"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    disabled={isSubmitting}
                     required
                   />
                 </label>
 
                 <button
                   type="submit"
-                  className="block w-full px-4 py-2 mt-4 text-sm font-medium leading-5 text-center text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple"
+                  disabled={isSubmitting}
+                  className={`flex items-center justify-center gap-2 w-full px-4 py-2 mt-4 text-sm font-medium leading-5 text-center text-white transition-colors duration-150 rounded-lg ${
+                    isSubmitting
+                      ? "bg-purple-400 cursor-not-allowed opacity-75"
+                      : "bg-purple-600 border border-transparent active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple cursor-pointer"
+                  }`}
                 >
-                  Recover password
+                  {isSubmitting ? (
+                    <>
+                      <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      <span>Sending link...</span>
+                    </>
+                  ) : (
+                    "Recover password"
+                  )}
                 </button>
               </form>
 

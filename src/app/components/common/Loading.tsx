@@ -12,37 +12,39 @@ export default function Loading({
   variant = "fullscreen",
 }: LoadingProps) {
   const isWebTheme = variant === "web";
-  const primaryColorClass = isWebTheme ? "text-success" : "text-purple-600 dark:text-purple-400";
-  const borderSpinnerClass = isWebTheme
-    ? "border-emerald-500 border-t-transparent"
-    : "border-purple-600 border-t-transparent";
+  const bgClass = isWebTheme
+    ? "bg-white"
+    : "bg-white dark:bg-gray-900";
+  const textClass = isWebTheme
+    ? "text-[#d20b4f]"
+    : "text-[#d20b4f] dark:text-[#f3a6be]";
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 p-4 transition-colors duration-300">
-      <div className="relative flex items-center justify-center mb-4">
-        {/* Outer glowing pulsing ring */}
-        <div
-          className={`absolute h-16 w-16 rounded-circle animate-ping opacity-25 ${
-            isWebTheme ? "bg-success" : "bg-purple-500"
-          }`}
-        ></div>
-
-        {/* Outer Spinner Ring */}
-        <div
-          className={`h-12 w-12 rounded-circle border-4 border-solid animate-spin ${borderSpinnerClass}`}
-          style={{ borderTopColor: "transparent" }}
-        ></div>
-
-        {/* Center Icon */}
-        <div className={`absolute ${primaryColorClass}`}>
-          <i className={`fas ${isWebTheme ? "fa-seedling" : "fa-shield-alt"} fa-sm`}></i>
+    <div
+      className={`flex min-h-screen flex-col items-center justify-center p-4 transition-colors duration-300 ${bgClass}`}
+    >
+      <div className="flex flex-col items-center justify-center">
+        <div className="relative flex items-center justify-center mb-3">
+          {/* Soft background glow behind logo without rotation */}
+          <div className="absolute -inset-3 rounded-full bg-[#fff0ad]/60 dark:bg-[#fff0ad]/20 animate-pulse blur-md" />
+          <img
+            src="/assets/logo.png"
+            alt="Makhan Chor"
+            className="relative w-28 h-auto object-contain animate-pulse"
+          />
         </div>
-      </div>
 
-      {/* Loading Text */}
-      <p className={`text-sm font-semibold tracking-wide animate-pulse ${primaryColorClass}`}>
-        {message}
-      </p>
+        {/* Loading Text */}
+        {message && (
+          <p
+            className={`text-xs font-bold tracking-wider uppercase animate-pulse mt-2 ${textClass}`}
+          >
+            {message}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
+
+
