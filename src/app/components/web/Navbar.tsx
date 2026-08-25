@@ -2,21 +2,69 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { siteConfig } from "../../config/site";
 import { useWebAuth } from "@/app/context/WebAuthContext";
+import { allProducts } from "@/app/data/products";
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, isAuthenticated, logout } = useWebAuth();
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     setIsNavOpen(false);
     setIsUserMenuOpen(false);
+    setIsSearchOpen(false);
   }, [pathname]);
+
+  // Handle ESC key to close search modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsSearchOpen(false);
+      }
+    };
+    if (isSearchOpen) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isSearchOpen]);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/shop?q=${encodeURIComponent(searchQuery.trim())}`);
+    } else {
+      router.push("/shop");
+    }
+    setIsSearchOpen(false);
+  };
+
+  const handleCategoryQuickSearch = (cat: string) => {
+    router.push(`/shop?category=${encodeURIComponent(cat)}`);
+    setIsSearchOpen(false);
+  };
+
+  // Instant live search results as devotee types
+  const liveResults = searchQuery.trim()
+    ? allProducts
+        .filter((p) => {
+          const q = searchQuery.toLowerCase().trim();
+          return (
+            p.name.toLowerCase().includes(q) ||
+            p.category.toLowerCase().includes(q) ||
+            p.desc.toLowerCase().includes(q)
+          );
+        })
+        .slice(0, 4)
+    : [];
+
+  const quickCategories = ["Poshak", "Pagdi", "Kundan Shringar", "Special"];
 
   return (
     <>
@@ -35,32 +83,36 @@ export default function Navbar() {
           <nav className="hidden md:flex items-center gap-8 text-sm font-bold text-[#d20b4f]">
             <Link
               href="/"
-              className={`transition hover:text-black no-underline ${pathname === "/" ? "text-black" : ""
-                }`}
+              className={`transition hover:text-black no-underline ${
+                pathname === "/" ? "text-black" : ""
+              }`}
             >
               Home
             </Link>
 
             <Link
               href="/shop"
-              className={`transition hover:text-black no-underline ${pathname === "/shop" ? "text-black" : ""
-                }`}
+              className={`transition hover:text-black no-underline ${
+                pathname === "/shop" ? "text-black" : ""
+              }`}
             >
               Category
             </Link>
 
             <Link
               href="/blog-preview"
-              className={`transition hover:text-black no-underline ${pathname === "/blog-preview" ? "text-black" : ""
-                }`}
+              className={`transition hover:text-black no-underline ${
+                pathname === "/blog-preview" ? "text-black" : ""
+              }`}
             >
               Blogs
             </Link>
 
             <Link
               href="/contact"
-              className={`transition hover:text-black no-underline ${pathname === "/contact" ? "text-black" : ""
-                }`}
+              className={`transition hover:text-black no-underline ${
+                pathname === "/contact" ? "text-black" : ""
+              }`}
             >
               Contact
             </Link>
@@ -70,9 +122,12 @@ export default function Navbar() {
           <div className="flex items-center gap-3">
             {/* Search Icon */}
             <button
-              onClick={() => setIsSearchOpen(true)}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#d20b4f] transition hover:bg-[#d20b4f] hover:text-black border-0 cursor-pointer shadow-xs"
-              title="Search"
+              onClick={() => {
+                setSearchQuery("");
+                setIsSearchOpen(true);
+              }}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#d20b4f] transition hover:bg-[#d20b4f] hover:text-white border-0 cursor-pointer shadow-xs"
+              title="Search Sacred Items"
               type="button"
             >
               <i className="fas fa-search text-xs"></i>
@@ -81,11 +136,11 @@ export default function Navbar() {
             {/* Cart Icon */}
             <Link
               href="/cart"
-              className="relative flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#d20b4f] transition hover:bg-[#d20b4f] hover:text-black no-underline shadow-xs"
+              className="relative flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#d20b4f] transition hover:bg-[#d20b4f] hover:text-white no-underline shadow-xs"
               title="Cart"
             >
               <i className="fas fa-shopping-bag text-xs"></i>
-              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#d20b4f] text-[10px] font-bold text-black">
+              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#d20b4f] text-[10px] font-bold text-white">
                 3
               </span>
             </Link>
@@ -96,7 +151,7 @@ export default function Navbar() {
                 <button
                   type="button"
                   onClick={() => setIsUserMenuOpen((prev) => !prev)}
-                  className="rounded bg-[#d20b4f] px-3 py-1 text-xs font-bold text-black transition hover:bg-[#b80943] border-0 cursor-pointer flex items-center gap-1"
+                  className="rounded bg-[#d20b4f] px-3 py-1 text-xs font-bold text-white transition hover:bg-[#b80943] border-0 cursor-pointer flex items-center gap-1 shadow-xs"
                 >
                   <i className="fas fa-user-circle"></i>
                   <span className="max-w-[70px] truncate">{user?.name || "Account"}</span>
@@ -147,7 +202,7 @@ export default function Navbar() {
             ) : (
               <Link
                 href="/login"
-                className="rounded bg-[#d20b4f] px-4 py-1 text-xs font-bold text-black transition hover:bg-[#b80943] no-underline"
+                className="rounded bg-[#d20b4f] px-4 py-1 text-xs font-bold text-white transition hover:bg-[#b80943] no-underline shadow-xs"
               >
                 Log In
               </Link>
@@ -204,41 +259,131 @@ export default function Navbar() {
 
       {/* Search Modal */}
       {isSearchOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl border border-[#fff0ad]">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="heading-font text-lg font-bold text-[#d20b4f]">
-                Search Items
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 backdrop-blur-xs p-4 pt-16 sm:pt-24"
+          onClick={() => setIsSearchOpen(false)}
+        >
+          <div
+            className="w-full max-w-lg rounded-xl bg-white p-5 sm:p-6 shadow-2xl border border-[#fff0ad] animate-in fade-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-3 border-b border-[#fff0ad] pb-2">
+              <h3 className="heading-font text-lg font-bold text-[#d20b4f] flex items-center gap-2 mb-0">
+                <i className="fas fa-search text-sm"></i>
+                <span>Search Sacred Items</span>
               </h3>
               <button
                 type="button"
                 onClick={() => setIsSearchOpen(false)}
-                className="text-black hover:text-[#d20b4f] border-0 bg-transparent text-xl font-bold cursor-pointer"
+                className="h-7 w-7 rounded-full text-gray-500 hover:text-black hover:bg-gray-100 flex items-center justify-center border-0 bg-transparent text-lg font-bold cursor-pointer transition"
+                title="Close"
               >
                 &times;
               </button>
             </div>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                setIsSearchOpen(false);
-                window.location.href = "/shop";
-              }}
-              className="flex gap-2"
-            >
-              <input
-                type="text"
-                placeholder="Search Pagdi, Kundan, Poshak..."
-                className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-[#d20b4f] focus:outline-hidden"
-                autoFocus
-              />
+
+            <form onSubmit={handleSearchSubmit} className="flex gap-2 mb-4">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  placeholder="Search Poshak, Pagdi, Kundan, Mukut..."
+                  className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm text-black focus:border-[#d20b4f] focus:outline-hidden pr-8 shadow-2xs"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  autoFocus
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-2.5 top-2.5 text-gray-400 hover:text-black border-0 bg-transparent cursor-pointer text-xs"
+                  >
+                    <i className="fas fa-times"></i>
+                  </button>
+                )}
+              </div>
               <button
                 type="submit"
-                className="rounded bg-[#d20b4f] px-4 py-2 text-sm font-bold text-black hover:bg-[#b80943] transition border-0 cursor-pointer"
+                className="rounded-lg bg-[#d20b4f] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#b80943] transition border-0 cursor-pointer shadow-xs flex items-center gap-1.5"
               >
-                Search
+                <span>Search</span>
               </button>
             </form>
+
+            {/* Quick Category Tags */}
+            <div className="mb-4">
+              <span className="text-[11px] font-bold text-gray-500 block mb-1.5">
+                Popular Categories:
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {quickCategories.map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => handleCategoryQuickSearch(cat)}
+                    className="rounded-full bg-[#fff0ad]/70 hover:bg-[#d20b4f] hover:text-white text-gray-800 text-xs font-bold px-3 py-1 border border-[#fff0ad] transition cursor-pointer"
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Live Instant Search Suggestions */}
+            {searchQuery.trim() && (
+              <div className="border-t border-[#fff0ad] pt-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-gray-700">
+                    Quick Results ({liveResults.length}):
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleSearchSubmit}
+                    className="text-xs font-bold text-[#d20b4f] hover:underline bg-transparent border-0 cursor-pointer p-0"
+                  >
+                    View all in Shop &rarr;
+                  </button>
+                </div>
+
+                {liveResults.length > 0 ? (
+                  <div className="space-y-2">
+                    {liveResults.map((product) => (
+                      <Link
+                        key={product.id}
+                        href={`/shop-detail?id=${product.id}&size=Size%202`}
+                        onClick={() => setIsSearchOpen(false)}
+                        className="flex items-center gap-3 p-2 rounded-lg border border-[#fff0ad] hover:bg-[#fff0ad]/30 transition no-underline text-black group"
+                      >
+                        <div className="h-10 w-10 flex-shrink-0 bg-[#fff0ad] p-1 flex items-center justify-center rounded overflow-hidden">
+                          <img
+                            src={product.img}
+                            alt={product.name}
+                            className="h-full w-full object-contain group-hover:scale-105 transition"
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold truncate group-hover:text-[#d20b4f]">
+                              {product.name}
+                            </span>
+                            <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-[#d20b4f] text-white">
+                              {product.category}
+                            </span>
+                          </div>
+                          <span className="text-xs font-bold text-[#d20b4f]">
+                            {product.price}
+                          </span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-4 text-center text-xs text-gray-500">
+                    No matching items found. Press search to browse all items in shop.
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
