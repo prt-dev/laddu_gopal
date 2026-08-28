@@ -23,8 +23,8 @@ export default function WebProtectedRoute({ children }: Props) {
     pathname === "/shop-detail" ||
     pathname === "/blog-preview" ||
     pathname === "/contact" ||
-    // pathname === "/cart" ||
-    // pathname === "/checkout" ||
+    pathname === "/cart" ||
+    pathname === "/checkout" ||
     pathname === "/testimonial" ||
     pathname?.startsWith("/shop") ||
     pathname?.startsWith("/blog");

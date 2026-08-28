@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { ProductItem } from "@/app/data/products";
+import AddToCartButton from "@/app/components/web/AddToCartButton";
 
 export type { ProductItem };
 
@@ -57,11 +58,10 @@ export default function ProductCard({
               onSelectCategory(product.category);
             }
           }}
-          className={`absolute top-2.5 left-2.5 rounded px-2 py-0.5 text-[10px] font-bold text-white shadow-xs border-0 transition ${
-            onSelectCategory
-              ? "bg-[#d20b4f] hover:bg-[#b80943] cursor-pointer hover:scale-105"
-              : "bg-[#d20b4f] pointer-events-none"
-          }`}
+          className={`absolute top-2.5 left-2.5 rounded px-2 py-0.5 text-[10px] font-bold text-white shadow-xs border-0 transition ${onSelectCategory
+            ? "bg-[#d20b4f] hover:bg-[#b80943] cursor-pointer hover:scale-105"
+            : "bg-[#d20b4f] pointer-events-none"
+            }`}
           title={onSelectCategory ? `Filter by ${product.category}` : undefined}
         >
           {product.category}
@@ -106,11 +106,10 @@ export default function ProductCard({
                     key={size}
                     type="button"
                     onClick={() => handleSizeClick(size)}
-                    className={`rounded px-2 py-0.5 text-[11px] font-bold transition-all cursor-pointer border ${
-                      isSelected
-                        ? "bg-[#d20b4f] text-white border-[#d20b4f] shadow-xs scale-105"
-                        : "bg-[#fff0ad]/60 text-gray-800 border-[#fff0ad] hover:bg-[#fff0ad] hover:border-[#d20b4f]/40"
-                    }`}
+                    className={`rounded px-2 py-0.5 text-[11px] font-bold transition-all cursor-pointer border ${isSelected
+                      ? "bg-[#d20b4f] text-white border-[#d20b4f] shadow-xs scale-105"
+                      : "bg-[#fff0ad]/60 text-gray-800 border-[#fff0ad] hover:bg-[#fff0ad] hover:border-[#d20b4f]/40"
+                      }`}
                     title={`Select ${size}`}
                   >
                     {sizeNumber}
@@ -126,14 +125,17 @@ export default function ProductCard({
           <span className="text-sm font-bold text-[#d20b4f]">
             {product.price}
           </span>
-          <Link
-            href={`/cart?item=${product.id}&size=${encodeURIComponent(activeSize)}`}
-            className="rounded bg-[#d20b4f] px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-[#b80943] no-underline shadow-xs"
-          >
-            Add to Cart
-          </Link>
+          <AddToCartButton
+            productId={product.id}
+            variant={activeSize}
+            price={product.price}
+            quantity={1}
+            product={product}
+          />
         </div>
       </div>
     </div>
   );
 }
+
+

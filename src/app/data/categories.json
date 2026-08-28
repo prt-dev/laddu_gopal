@@ -1,0 +1,54 @@
+[
+  {
+    "id": 1,
+    "name": "Poshak",
+    "label": "Poshak & Dresses",
+    "slug": "poshak",
+    "filter": "Poshak",
+    "description": "Exquisite handmade velvet and silk dresses richly embroidered with shimmering zari threads, glass stones, and pearl borders for Thakur Ji.",
+    "img": "/assets/best-selling.png",
+    "image_url": "/assets/best-selling.png",
+    "count": 2,
+    "parent_id": null,
+    "status": 1
+  },
+  {
+    "id": 2,
+    "name": "Pagdi",
+    "label": "Pagdi & Turbans",
+    "slug": "pagdi",
+    "filter": "Pagdi",
+    "description": "Handcrafted traditional crown turbans adorned with peacock feather motifs, micro pearls, and shimmering golden zardozi work for royal Thakur Ji shringar.",
+    "img": "/assets/pagdi.png",
+    "image_url": "/assets/pagdi.png",
+    "count": 2,
+    "parent_id": null,
+    "status": 1
+  },
+  {
+    "id": 3,
+    "name": "Kundan Shringar",
+    "label": "Kundan Shringar",
+    "slug": "kundan-shringar",
+    "filter": "Kundan Shringar",
+    "description": "Gleaming pure kundan haar, matching tilaks, bangles, and meenakari jewellery kits designed specifically for divine deity shringar.",
+    "img": "/assets/kundan.png",
+    "image_url": "/assets/kundan.png",
+    "count": 2,
+    "parent_id": null,
+    "status": 1
+  },
+  {
+    "id": 4,
+    "name": "Special",
+    "label": "Special Combos",
+    "slug": "special",
+    "filter": "Special",
+    "description": "Complete festive devotional combos including embroidered poshak, matching pagdi, patka, and brass flute for Janmashtami and auspicious celebrations.",
+    "img": "/assets/best-selling.png",
+    "image_url": "/assets/best-selling.png",
+    "count": 1,
+    "parent_id": null,
+    "status": 1
+  }
+]

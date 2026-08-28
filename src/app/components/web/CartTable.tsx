@@ -1,9 +1,18 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import CartItemRow, { CartItemType } from "./CartItemRow";
+import {
+  getMyCartApi,
+  updateCartItemApi,
+  deleteCartItemApi,
+  CartItem,
+} from "@/app/services/cartService";
+import { useWebAuth } from "@/app/context/WebAuthContext";
+import { getProductById, allProducts } from "@/app/data/products";
 
-const initialCartItems: CartItemType[] = [
+const fallbackCartItems: CartItemType[] = [
   {
     id: 1,
     img: "/assets/best-selling.png",
@@ -31,27 +40,121 @@ const initialCartItems: CartItemType[] = [
 ];
 
 export default function CartTable() {
-  const [items, setItems] = useState<CartItemType[]>(initialCartItems);
+  const { token, isAuthenticated } = useWebAuth();
+  const searchParams = useSearchParams();
+  const [items, setItems] = useState<CartItemType[]>(fallbackCartItems);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const updateQuantity = (id: number, delta: number) => {
+  // Fetch cart items from API if authenticated
+  const fetchCart = useCallback(async () => {
+    if (!token) return;
+    setIsLoading(true);
+    try {
+      const response = await getMyCartApi(token);
+      const cartList: CartItem[] = response.items || response.carts || (Array.isArray(response) ? response : []);
+
+      if (cartList && cartList.length > 0) {
+        const mappedItems: CartItemType[] = cartList.map((c: CartItem) => {
+          const localProd = c.product_id ? getProductById(c.product_id) : null;
+          return {
+            id: Number(c.id || c.product_id || Math.random()),
+            img: (c.product?.image_url as string) || localProd?.img || "/assets/best-selling.png",
+            name: (c.product?.name as string) || localProd?.name || "Devotional Sacred Item",
+            size: c.variant || "Standard Size", // variant is size of product
+            price: Number(c.price) || (localProd ? parseFloat(localProd.price.replace(/[^0-9.]/g, "")) : 0),
+            quantity: c.quantity || 1,
+          };
+        });
+        setItems(mappedItems);
+      }
+    } catch (error) {
+      console.warn("Could not fetch cart items from backend, using current session:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (isAuthenticated && token) {
+      fetchCart();
+    } else {
+      // Check if URL has item query param to add
+      const urlItemId = searchParams.get("item");
+      const urlSize = searchParams.get("size");
+      if (urlItemId) {
+        const found = getProductById(Number(urlItemId));
+        if (found) {
+          const newItem: CartItemType = {
+            id: found.id,
+            img: found.img,
+            name: found.name,
+            size: urlSize || found.sizes[0] || "Size 0",
+            price: parseFloat(found.price.replace(/[^0-9.]/g, "")) || 0,
+            quantity: 1,
+          };
+          setItems((prev) => {
+            const exists = prev.some((p) => p.id === newItem.id && p.size === newItem.size);
+            if (exists) return prev;
+            return [newItem, ...prev];
+          });
+        }
+      }
+    }
+  }, [isAuthenticated, token, fetchCart, searchParams]);
+
+  const updateQuantity = async (id: number, delta: number) => {
+    const targetItem = items.find((i) => i.id === id);
+    if (!targetItem) return;
+
+    const newQty = Math.max(1, targetItem.quantity + delta);
+
     setItems((prev) =>
       prev.map((item) => {
         if (item.id === id) {
-          const newQty = Math.max(1, item.quantity + delta);
           return { ...item, quantity: newQty };
         }
         return item;
       })
     );
+
+    if (token) {
+      try {
+        await updateCartItemApi(
+          id,
+          {
+            quantity: newQty,
+            variant: targetItem.size,
+            price: targetItem.price,
+          },
+          token
+        );
+      } catch (err) {
+        console.error("Failed to sync updated quantity with API:", err);
+      }
+    }
   };
 
-  const removeItem = (id: number) => {
+  const removeItem = async (id: number) => {
     setItems((prev) => prev.filter((item) => item.id !== id));
+
+    if (token) {
+      try {
+        await deleteCartItemApi(id, token);
+      } catch (err) {
+        console.error("Failed to delete cart item from API:", err);
+      }
+    }
   };
 
   return (
     <>
       <div className="overflow-x-auto rounded border border-[#fff0ad] bg-white shadow-xs">
+        {isLoading && (
+          <div className="p-4 text-center text-xs font-bold text-[#d20b4f]">
+            <i className="fa fa-spinner fa-spin mr-2" />
+            Loading your devotional basket...
+          </div>
+        )}
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-[#fff0ad] bg-[#fff0ad] text-xs font-bold text-[#d20b4f]">
@@ -67,7 +170,7 @@ export default function CartTable() {
             {items.length > 0 ? (
               items.map((item) => (
                 <CartItemRow
-                  key={item.id}
+                  key={`${item.id}-${item.size || ""}`}
                   item={item}
                   onUpdateQuantity={updateQuantity}
                   onRemove={removeItem}
@@ -101,3 +204,4 @@ export default function CartTable() {
     </>
   );
 }
+

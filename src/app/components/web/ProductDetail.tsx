@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { getProductById, ProductItem } from "@/app/data/products";
+import AddToCartButton from "@/app/components/web/AddToCartButton";
 
 interface ProductDetailProps {
   productId?: number | string;
@@ -88,11 +89,10 @@ export default function ProductDetail({ productId, initialSize }: ProductDetailP
                         key={size}
                         type="button"
                         onClick={() => setSelectedSize(size)}
-                        className={`rounded px-3 py-1.5 text-xs font-bold transition cursor-pointer border ${
-                          isSelected
-                            ? "bg-[#d20b4f] text-white border-[#d20b4f] shadow-xs scale-105"
-                            : "bg-[#fff0ad]/60 text-black border-[#fff0ad] hover:bg-[#d20b4f] hover:text-white"
-                        }`}
+                        className={`rounded px-3 py-1.5 text-xs font-bold transition cursor-pointer border ${isSelected
+                          ? "bg-[#d20b4f] text-white border-[#d20b4f] shadow-xs scale-105"
+                          : "bg-[#fff0ad]/60 text-black border-[#fff0ad] hover:bg-[#d20b4f] hover:text-white"
+                          }`}
                       >
                         {size} ({sizeNumber})
                       </button>
@@ -103,12 +103,23 @@ export default function ProductDetail({ productId, initialSize }: ProductDetailP
             </div>
 
             {/* Action Buttons */}
-            <div className="mt-6 pt-4 border-t border-[#fff0ad]">
+            <div className="mt-6 pt-4 border-t border-[#fff0ad] flex flex-wrap items-center gap-3">
+              <AddToCartButton
+                productId={product.id}
+                variant={selectedSize}
+                price={product.price}
+                quantity={1}
+                className="px-6 py-2.5 text-sm"
+                showIcon={true}
+                loadingText="Adding to Basket..."
+                successText="Added to Devotional Basket!"
+              />
+
               <Link
-                href={`/cart?item=${product.id}&size=${encodeURIComponent(selectedSize)}`}
-                className="rounded bg-[#d20b4f] px-6 py-2.5 text-sm font-bold text-white transition hover:bg-[#b80943] no-underline text-center inline-block shadow-xs cursor-pointer"
+                href="/cart"
+                className="rounded border border-[#d20b4f] px-5 py-2.5 text-sm font-bold text-[#d20b4f] hover:bg-[#fff0ad]/50 transition no-underline text-center inline-flex items-center gap-1.5"
               >
-                Add to Cart ({selectedSize})
+                View Basket
               </Link>
             </div>
           </div>
