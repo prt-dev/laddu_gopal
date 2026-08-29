@@ -5,39 +5,52 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
 import {
-  createProductApi,
-  updateProductApi,
-  getProductById,
-  ProductItem,
-} from "@/app/services/productService";
-import { getCategories, CategoryItem } from "@/app/services/categoryService";
-import { BASE_URL } from "@/app/services/authService";
+  createCategoryApi,
+  updateCategoryApi,
+  getCategoryById,
+  getCategories,
+  CategoryItem,
+} from "@/app/services/categoryService";
 import { getFullImageUrl, uploadRemoteFile } from "@/app/utils/utils";
 
-interface ProductFormProps {
-  productId?: number | string;
+interface CategoryFormProps {
+  categoryId?: number | string;
   mode?: "add" | "edit";
 }
 
-export default function ProductForm({ productId, mode }: ProductFormProps) {
+function generateSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+export default function CategoryForm({ categoryId, mode }: CategoryFormProps) {
   const router = useRouter();
   const { token, isLoading: isAuthLoading } = useAuth();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const isEdit = mode === "edit" || Boolean(productId);
+  const isEdit = mode === "edit" || Boolean(categoryId);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string;
+    slug: string;
+    description: string;
+    image_url: string;
+    parent_id: string;
+    status: number;
+  }>({
     name: "",
-    sku: "",
-    price: "",
-    stock_quantity: "0",
-    category_id: "",
-    image_url: "",
-    status: 1,
+    slug: "",
     description: "",
+    image_url: "",
+    parent_id: "",
+    status: 1,
   });
 
-  const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [parentCategories, setParentCategories] = useState<CategoryItem[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [uploadMode, setUploadMode] = useState<"file" | "url">("file");
@@ -48,52 +61,51 @@ export default function ProductForm({ productId, mode }: ProductFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
 
-  // Fetch categories for dropdown
+  // Load existing categories for parent dropdown
   useEffect(() => {
-    const fetchCats = async () => {
+    const fetchParents = async () => {
       if (!token) return;
       try {
         const data = await getCategories({ limit: 100 }, token);
-        const list = Array.isArray(data) ? data : data?.categories || data?.items || [];
-        setCategories(list);
+        const list: CategoryItem[] = Array.isArray(data)
+          ? data
+          : data?.categories || data?.items || [];
+        setParentCategories(list);
       } catch (e) {
-        console.warn("Failed to load categories for product form", e);
+        console.warn("Failed to load parent categories list", e);
       }
     };
     if (token) {
-      fetchCats();
+      fetchParents();
     }
   }, [token]);
 
-  // Fetch existing product data in edit mode
+  // Fetch existing category in edit mode
   useEffect(() => {
-    if (!isEdit || !productId || !token) return;
+    if (!isEdit || !categoryId || !token) return;
 
-    const fetchProduct = async () => {
+    const fetchCategory = async () => {
       try {
         setIsFetching(true);
         setError(null);
-        const data = await getProductById(Number(productId), token);
+        const data = await getCategoryById(Number(categoryId), token);
         if (data) {
           setFormData({
             name: data.name || "",
-            sku: data.sku || "",
-            price: data.price !== undefined ? String(data.price) : "",
-            stock_quantity:
-              data.stock_quantity !== undefined ? String(data.stock_quantity) : "0",
-            category_id:
-              data.category_id !== undefined && data.category_id !== null
-                ? String(data.category_id)
-                : "",
+            slug: data.slug || "",
+            description: data.description || "",
             image_url: data.image_url || "",
+            parent_id:
+              data.parent_id !== undefined && data.parent_id !== null
+                ? String(data.parent_id)
+                : "",
             status:
               data.status === 1 ||
-                data.status === "1" ||
-                data.status === "active" ||
-                data.status === "Active"
+              data.status === "1" ||
+              data.status === "active" ||
+              data.status === "Active"
                 ? 1
                 : 0,
-            description: data.description || "",
           });
 
           if (data.image_url) {
@@ -101,27 +113,40 @@ export default function ProductForm({ productId, mode }: ProductFormProps) {
           }
         }
       } catch (err: any) {
-        console.error("Failed to fetch product:", err);
-        setError(err?.message || "Failed to load product details.");
+        console.error("Failed to fetch category:", err);
+        setError(err?.message || "Failed to load category details.");
       } finally {
         setIsFetching(false);
       }
     };
 
-    fetchProduct();
-  }, [isEdit, productId, token]);
+    fetchCategory();
+  }, [isEdit, categoryId, token]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => {
+      const next = { ...prev, [name]: value };
+      // Auto-generate slug on name change if not manually changed or in add mode
+      if (name === "name" && (!prev.slug || prev.slug === generateSlug(prev.name))) {
+        next.slug = generateSlug(value);
+      }
+      return next;
+    });
 
     if (name === "image_url") {
       setPreviewUrl(getFullImageUrl(value));
+    }
+  };
+
+  const handleSlugRegenerate = () => {
+    if (formData.name) {
+      setFormData((prev) => ({
+        ...prev,
+        slug: generateSlug(prev.name),
+      }));
     }
   };
 
@@ -132,19 +157,23 @@ export default function ProductForm({ productId, mode }: ProductFormProps) {
     }));
   };
 
-  // Handle local file selection for image upload
+  // Handle local file selection for category image
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate image format
-    const validTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml"];
+    const validTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+      "image/svg+xml",
+    ];
     if (!validTypes.includes(file.type)) {
       setError("Please select a valid image file (JPEG, PNG, WEBP, GIF, SVG).");
       return;
     }
 
-    // Validate size (10MB max)
     if (file.size > 10 * 1024 * 1024) {
       setError("Image size must be less than 10MB.");
       return;
@@ -166,20 +195,9 @@ export default function ProductForm({ productId, mode }: ProductFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!formData.name.trim()) {
-      setError("Product name is required.");
-      return;
-    }
-
-    const priceNum = parseFloat(formData.price);
-    if (isNaN(priceNum) || priceNum < 0) {
-      setError("Please enter a valid price (greater than or equal to 0).");
-      return;
-    }
-
-    const stockNum = parseInt(formData.stock_quantity, 10);
-    if (isNaN(stockNum) || stockNum < 0) {
-      setError("Please enter a valid stock quantity.");
+      setError("Category name is required.");
       return;
     }
 
@@ -194,43 +212,40 @@ export default function ProductForm({ productId, mode }: ProductFormProps) {
 
       let finalImageUrl = formData.image_url.trim();
 
-      // Step 1: If a new file is selected, upload it first using universal uploadRemoteFile
+      // Step 1: Upload to remote PHP storage via FastAPI /remote-upload/file
       if (selectedFile) {
-        setUploadProgress("Uploading product image...");
-        finalImageUrl = await uploadRemoteFile(selectedFile, token, "products");
+        setUploadProgress("Uploading category image to remote storage...");
+        finalImageUrl = await uploadRemoteFile(selectedFile, token, "categories");
       }
 
-      setUploadProgress(isEdit ? "Updating product..." : "Creating product...");
+      setUploadProgress(isEdit ? "Updating category..." : "Creating category...");
 
-      // Step 2: Create / Update product with the returned image_url
-      const payload: Partial<ProductItem> = {
+      // Step 2: Build Category payload matching required keys:
+      // id, name, slug, description, image_url, parent_id, status
+      const payload: Partial<CategoryItem> = {
         name: formData.name.trim(),
-        sku: formData.sku.trim() || undefined,
-        price: priceNum,
-        stock_quantity: stockNum,
-        category_id: formData.category_id
-          ? parseInt(formData.category_id, 10)
-          : undefined,
-        image_url: finalImageUrl || undefined,
-        status: formData.status,
+        slug: formData.slug.trim() || generateSlug(formData.name),
         description: formData.description.trim() || undefined,
+        image_url: finalImageUrl || undefined,
+        parent_id: formData.parent_id ? parseInt(formData.parent_id, 10) : null,
+        status: formData.status,
       };
 
-      if (isEdit && productId) {
-        await updateProductApi(Number(productId), payload, token);
+      if (isEdit && categoryId) {
+        await updateCategoryApi(Number(categoryId), payload, token);
       } else {
-        await createProductApi(payload, token);
+        await createCategoryApi(payload, token);
       }
 
       setSuccess(true);
       setTimeout(() => {
-        router.push("/admin/products");
+        router.push("/admin/categories");
       }, 1200);
     } catch (err: any) {
-      console.error(isEdit ? "Failed to update product:" : "Failed to create product:", err);
+      console.error(isEdit ? "Failed to update category:" : "Failed to create category:", err);
       setError(
         err?.message ||
-        (isEdit ? "Failed to update product." : "Failed to create product.")
+          (isEdit ? "Failed to update category." : "Failed to create category.")
       );
     } finally {
       setIsSubmitting(false);
@@ -261,7 +276,7 @@ export default function ProductForm({ productId, mode }: ProductFormProps) {
             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
           ></path>
         </svg>
-        <span className="text-base font-medium">Loading product details...</span>
+        <span className="text-base font-medium">Loading category details...</span>
       </div>
     );
   }
@@ -273,25 +288,25 @@ export default function ProductForm({ productId, mode }: ProductFormProps) {
         <div>
           <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400 mb-1">
             <Link
-              href="/admin/products"
+              href="/admin/categories"
               className="hover:text-purple-600 dark:hover:text-purple-400"
             >
-              Products
+              Categories
             </Link>
             <span>/</span>
             <span className="text-gray-700 dark:text-gray-200">
-              {isEdit ? "Edit Product" : "Add New"}
+              {isEdit ? "Edit Category" : "Add New"}
             </span>
           </div>
           <h2 className="text-2xl font-semibold text-gray-700 dark:text-gray-200">
-            {isEdit ? "Edit Product" : "Add New Product"}
+            {isEdit ? "Edit Category" : "Add New Category"}
           </h2>
         </div>
         <Link
-          href="/admin/products"
+          href="/admin/categories"
           className="px-4 py-2 text-sm font-medium leading-5 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none transition-colors"
         >
-          ← Back to Products
+          ← Back to Categories
         </Link>
       </div>
 
@@ -321,8 +336,8 @@ export default function ProductForm({ productId, mode }: ProductFormProps) {
           </svg>
           <span>
             {isEdit
-              ? "Product updated successfully! Redirecting to products list..."
-              : "Product created successfully! Redirecting to products list..."}
+              ? "Category updated successfully! Redirecting to categories list..."
+              : "Category created successfully! Redirecting to categories list..."}
           </span>
         </div>
       )}
@@ -333,11 +348,11 @@ export default function ProductForm({ productId, mode }: ProductFormProps) {
         className="px-6 py-6 bg-white rounded-lg shadow-md dark:bg-gray-800 space-y-6"
       >
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          {/* Product Name */}
+          {/* Category Name */}
           <div className="md:col-span-2">
             <label className="block text-sm">
               <span className="text-gray-700 dark:text-gray-400 font-medium">
-                Product Name <span className="text-red-500">*</span>
+                Category Name <span className="text-red-500">*</span>
               </span>
               <input
                 type="text"
@@ -345,86 +360,63 @@ export default function ProductForm({ productId, mode }: ProductFormProps) {
                 value={formData.name}
                 onChange={handleChange}
                 required
-                placeholder="e.g. Ergonomic Garden Shovel"
+                placeholder="e.g. Poshak, Pagdi, Kundan Shringar"
                 className="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input py-2.5 px-3 border border-gray-300 rounded-md"
               />
             </label>
           </div>
 
-          {/* SKU */}
-          <div>
+          {/* Category Slug */}
+          <div className="md:col-span-2">
             <label className="block text-sm">
-              <span className="text-gray-700 dark:text-gray-400 font-medium">
-                SKU / Product Code
-              </span>
-              <input
-                type="text"
-                name="sku"
-                value={formData.sku}
-                onChange={handleChange}
-                placeholder="e.g. GRD-SHV-001"
-                className="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input py-2.5 px-3 border border-gray-300 rounded-md"
-              />
+              <div className="flex items-center justify-between">
+                <span className="text-gray-700 dark:text-gray-400 font-medium">
+                  Slug (URL identifier)
+                </span>
+                <button
+                  type="button"
+                  onClick={handleSlugRegenerate}
+                  className="text-xs text-purple-600 dark:text-purple-400 hover:underline"
+                >
+                  Generate from Name
+                </button>
+              </div>
+              <div className="flex items-center mt-1">
+                <span className="inline-flex items-center px-3 text-sm text-gray-500 bg-gray-100 dark:bg-gray-700 dark:text-gray-400 border border-r-0 border-gray-300 dark:border-gray-600 rounded-l-md py-2.5">
+                  /category/
+                </span>
+                <input
+                  type="text"
+                  name="slug"
+                  value={formData.slug}
+                  onChange={handleChange}
+                  placeholder="e.g. poshak"
+                  className="block w-full text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input py-2.5 px-3 border border-gray-300 rounded-r-md"
+                />
+              </div>
             </label>
           </div>
 
-          {/* Price */}
+          {/* Parent Category */}
           <div>
             <label className="block text-sm">
               <span className="text-gray-700 dark:text-gray-400 font-medium">
-                Price ($ USD) <span className="text-red-500">*</span>
-              </span>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                name="price"
-                value={formData.price}
-                onChange={handleChange}
-                required
-                placeholder="0.00"
-                className="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input py-2.5 px-3 border border-gray-300 rounded-md"
-              />
-            </label>
-          </div>
-
-          {/* Stock Quantity */}
-          <div>
-            <label className="block text-sm">
-              <span className="text-gray-700 dark:text-gray-400 font-medium">
-                Stock Quantity <span className="text-red-500">*</span>
-              </span>
-              <input
-                type="number"
-                min="0"
-                name="stock_quantity"
-                value={formData.stock_quantity}
-                onChange={handleChange}
-                required
-                placeholder="0"
-                className="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input py-2.5 px-3 border border-gray-300 rounded-md"
-              />
-            </label>
-          </div>
-
-          {/* Category */}
-          <div>
-            <label className="block text-sm">
-              <span className="text-gray-700 dark:text-gray-400 font-medium">
-                Category
+                Parent Category (Optional)
               </span>
               <select
-                name="category_id"
-                value={formData.category_id}
+                name="parent_id"
+                value={formData.parent_id}
                 onChange={handleChange}
                 className="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-select py-2.5 px-3 border border-gray-300 rounded-md"
               >
-                <option value="">Select Category (Optional)</option>
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name} {cat.slug ? `(${cat.slug})` : ""}
-                  </option>
-                ))}
+                <option value="">None (Top-level / Root Category)</option>
+                {parentCategories
+                  .filter((p) => !categoryId || p.id !== Number(categoryId))
+                  .map((parent) => (
+                    <option key={parent.id} value={parent.id}>
+                      {parent.name} {parent.slug ? `(${parent.slug})` : ""}
+                    </option>
+                  ))}
               </select>
             </label>
           </div>
@@ -441,49 +433,53 @@ export default function ProductForm({ productId, mode }: ProductFormProps) {
                   role="switch"
                   aria-checked={formData.status === 1}
                   onClick={handleStatusToggle}
-                  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${formData.status === 1
-                    ? "bg-purple-600 dark:bg-purple-500"
-                    : "bg-gray-200 dark:bg-gray-700"
-                    }`}
+                  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    formData.status === 1
+                      ? "bg-purple-600 dark:bg-purple-500"
+                      : "bg-gray-200 dark:bg-gray-700"
+                  }`}
                 >
                   <span
-                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${formData.status === 1 ? "translate-x-5" : "translate-x-0"
-                      }`}
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                      formData.status === 1 ? "translate-x-5" : "translate-x-0"
+                    }`}
                   />
                 </button>
                 <span className="text-sm text-gray-700 dark:text-gray-300">
                   {formData.status === 1
-                    ? "Active (Visible in store)"
-                    : "Inactive (Draft)"}
+                    ? "Active (Visible in catalog)"
+                    : "Inactive (Hidden)"}
                 </span>
               </div>
             </label>
           </div>
 
-          {/* Product Image Upload & Preview */}
+          {/* Remote Category Image Upload & Preview */}
           <div className="md:col-span-2">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-400">
-                Product Image
+                Category Image (Remote Storage)
               </span>
               <div className="flex items-center space-x-2 text-xs">
                 <button
                   type="button"
                   onClick={() => setUploadMode("file")}
-                  className={`px-3 py-1 rounded-md transition-colors ${uploadMode === "file"
-                    ? "bg-purple-600 text-white font-medium"
-                    : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    }`}
+                  className={`px-3 py-1 rounded-md transition-colors ${
+                    uploadMode === "file"
+                      ? "bg-purple-600 text-white font-medium"
+                      : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  }`}
                 >
                   Upload File
                 </button>
                 <button
                   type="button"
                   onClick={() => setUploadMode("url")}
-                  className={`px-3 py-1 rounded-md transition-colors ${uploadMode === "url"
-                    ? "bg-purple-600 text-white font-medium"
-                    : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    }`}
+                  className={`px-3 py-1 rounded-md transition-colors ${
+                    uploadMode === "url"
+                      ? "bg-purple-600 text-white font-medium"
+                      : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  }`}
                 >
                   Direct URL
                 </button>
@@ -512,12 +508,12 @@ export default function ProductForm({ productId, mode }: ProductFormProps) {
                   </svg>
                   <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     <span className="text-purple-600 dark:text-purple-400 underline">
-                      Click to choose an image
+                      Click to upload category banner/icon
                     </span>{" "}
                     or drag and drop
                   </p>
                   <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    PNG, JPG, WEBP, GIF, SVG (Max 10MB)
+                    PNG, JPG, WEBP, GIF, SVG (Max 10MB) • Uploads to remote storage (/remote-upload/image)
                   </p>
                   <input
                     ref={fileInputRef}
@@ -535,7 +531,7 @@ export default function ProductForm({ productId, mode }: ProductFormProps) {
                   name="image_url"
                   value={formData.image_url}
                   onChange={handleChange}
-                  placeholder="https://example.com/images/product.jpg or /uploads/products/..."
+                  placeholder="https://example.com/category.png or /uploads/categories/..."
                   className="block w-full text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input py-2.5 px-3 border border-gray-300 rounded-md"
                 />
               </div>
@@ -548,7 +544,7 @@ export default function ProductForm({ productId, mode }: ProductFormProps) {
                   <div className="w-16 h-16 rounded-md overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 flex-shrink-0">
                     <img
                       src={previewUrl}
-                      alt="Product preview"
+                      alt="Category preview"
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         (e.target as HTMLElement).style.display = "none";
@@ -559,7 +555,7 @@ export default function ProductForm({ productId, mode }: ProductFormProps) {
                     <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
                       {selectedFile ? selectedFile.name : "Current Image"}
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-sm">
                       {selectedFile
                         ? `${(selectedFile.size / 1024).toFixed(1)} KB`
                         : formData.image_url || "Loaded from server"}
@@ -588,7 +584,7 @@ export default function ProductForm({ productId, mode }: ProductFormProps) {
                 rows={4}
                 value={formData.description}
                 onChange={handleChange}
-                placeholder="Enter detailed description of the product..."
+                placeholder="Enter detailed description of this category..."
                 className="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input py-2.5 px-3 border border-gray-300 rounded-md"
               />
             </label>
@@ -598,7 +594,7 @@ export default function ProductForm({ productId, mode }: ProductFormProps) {
         {/* Action Buttons */}
         <div className="flex items-center justify-end space-x-4 pt-4 border-t border-gray-100 dark:border-gray-700">
           <Link
-            href="/admin/products"
+            href="/admin/categories"
             className="px-4 py-2 text-sm font-medium leading-5 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none transition-colors"
           >
             Cancel
@@ -631,10 +627,10 @@ export default function ProductForm({ productId, mode }: ProductFormProps) {
               </svg>
             )}
             {isSubmitting
-              ? uploadProgress || (isEdit ? "Updating Product..." : "Saving Product...")
+              ? uploadProgress || (isEdit ? "Updating Category..." : "Saving Category...")
               : isEdit
-                ? "Update Product"
-                : "Save Product"}
+              ? "Update Category"
+              : "Save Category"}
           </button>
         </div>
       </form>

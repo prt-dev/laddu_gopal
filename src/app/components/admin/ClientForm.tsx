@@ -11,7 +11,7 @@ import {
   ClientItem,
 } from "@/app/services/clientService";
 import { BASE_URL } from "@/app/services/authService";
-import { getFullImageUrl } from "@/app/utils/utils";
+import { getFullImageUrl, uploadRemoteFile } from "@/app/utils/utils";
 
 interface ClientFormProps {
   clientId?: number | string;
@@ -138,28 +138,6 @@ export default function ClientForm({ clientId, mode }: ClientFormProps) {
     }
   };
 
-  const uploadImageToServer = async (file: File, authToken: string): Promise<string> => {
-    const uploadFormData = new FormData();
-    uploadFormData.append("file", file);
-
-    const uploadUrl = `${BASE_URL}/upload/image?folder=clients`;
-    const response = await fetch(uploadUrl, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${authToken}`,
-      },
-      body: uploadFormData,
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || errorData.message || "Failed to upload logo.");
-    }
-
-    const result = await response.json();
-    return result.image_url || result.file_url;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) {
@@ -180,7 +158,7 @@ export default function ClientForm({ clientId, mode }: ClientFormProps) {
 
       if (selectedFile) {
         setUploadProgress("Uploading client logo...");
-        finalLogoUrl = await uploadImageToServer(selectedFile, token);
+        finalLogoUrl = await uploadRemoteFile(selectedFile, token, "clients");
       }
 
       setUploadProgress(isEdit ? "Updating client..." : "Creating client...");

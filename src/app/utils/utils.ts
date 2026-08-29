@@ -25,3 +25,6 @@ export function getFullImageUrl(url?: string | null): string {
     // Prepend backend URL (e.g., http://127.0.0.1:8000/uploads/products/...)
     return `${BACKEND_URL}${trimmed.startsWith("/") ? "" : "/"}${trimmed}`;
 }
+
+export * from "./remoteUpload";
+

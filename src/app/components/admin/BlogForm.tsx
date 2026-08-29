@@ -12,7 +12,7 @@ import {
 } from "@/app/services/blogService";
 import { getClients, ClientItem } from "@/app/services/clientService";
 import { BASE_URL } from "@/app/services/authService";
-import { getFullImageUrl } from "@/app/utils/utils";
+import { getFullImageUrl, uploadRemoteFile } from "@/app/utils/utils";
 
 interface BlogFormProps {
   blogId?: number | string;
@@ -170,28 +170,6 @@ export default function BlogForm({ blogId, mode }: BlogFormProps) {
     setOgPreviewUrl(URL.createObjectURL(file));
   };
 
-  const uploadImageToServer = async (file: File, authToken: string): Promise<string> => {
-    const uploadFormData = new FormData();
-    uploadFormData.append("file", file);
-
-    const uploadUrl = `${BASE_URL}/upload/image?folder=blogs`;
-    const response = await fetch(uploadUrl, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${authToken}`,
-      },
-      body: uploadFormData,
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || errorData.message || "Failed to upload image.");
-    }
-
-    const result = await response.json();
-    return result.image_url || result.file_url;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title.trim()) {
@@ -213,12 +191,12 @@ export default function BlogForm({ blogId, mode }: BlogFormProps) {
 
       if (selectedFeaturedFile) {
         setUploadProgress("Uploading featured image...");
-        finalFeaturedImageUrl = await uploadImageToServer(selectedFeaturedFile, token);
+        finalFeaturedImageUrl = await uploadRemoteFile(selectedFeaturedFile, token, "blogs");
       }
 
       if (selectedOgFile) {
         setUploadProgress("Uploading OG image...");
-        finalOgImageUrl = await uploadImageToServer(selectedOgFile, token);
+        finalOgImageUrl = await uploadRemoteFile(selectedOgFile, token, "blogs");
       }
 
       setUploadProgress(isEdit ? "Updating blog..." : "Publishing blog...");
