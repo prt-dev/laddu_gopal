@@ -5,7 +5,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { siteConfig } from "../../config/site";
 import { useWebAuth } from "@/app/context/WebAuthContext";
-import { allProducts } from "@/app/data/products";
+import { getProducts, ProductItem } from "@/app/services/productService";
+import { getCategories, CategoryItem } from "@/app/services/categoryService";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -15,6 +16,30 @@ export default function Navbar() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [productsList, setProductsList] = useState<ProductItem[]>([]);
+  const [categoriesList, setCategoriesList] = useState<CategoryItem[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadNavData() {
+      try {
+        const [prodRes, catRes] = await Promise.all([
+          getProducts({ limit: 50 }),
+          getCategories({ limit: 20 }),
+        ]);
+        if (isMounted) {
+          setProductsList(prodRes.products || []);
+          setCategoriesList(catRes.categories || []);
+        }
+      } catch (err) {
+        console.error("Navbar data fetch error:", err);
+      }
+    }
+    loadNavData();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     setIsNavOpen(false);
@@ -52,19 +77,22 @@ export default function Navbar() {
 
   // Instant live search results as devotee types
   const liveResults = searchQuery.trim()
-    ? allProducts
+    ? productsList
         .filter((p) => {
           const q = searchQuery.toLowerCase().trim();
           return (
-            p.name.toLowerCase().includes(q) ||
-            p.category.toLowerCase().includes(q) ||
-            p.desc.toLowerCase().includes(q)
+            (p.name || "").toLowerCase().includes(q) ||
+            (p.category || "").toLowerCase().includes(q) ||
+            (p.desc || p.description || "").toLowerCase().includes(q)
           );
         })
         .slice(0, 4)
     : [];
 
-  const quickCategories = ["Poshak", "Pagdi", "Kundan Shringar", "Special"];
+  const quickCategories =
+    categoriesList.length > 0
+      ? categoriesList.map((c) => c.name || "").filter(Boolean)
+      : ["Poshak", "Pagdi", "Kundan Shringar", "Special"];
 
   return (
     <>

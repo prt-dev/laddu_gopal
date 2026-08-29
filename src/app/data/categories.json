@@ -4,7 +4,7 @@
     "name": "Poshak",
     "slug": "poshak",
     "description": "Exquisite handmade velvet and silk dresses richly embroidered with shimmering zari threads, glass stones, and pearl borders for Thakur Ji.",
-    "image_url": "/category/best-selling.png",
+    "image_url": "https://apiapp.hotelmahalaiims.com/uploads/products/1787997509_6a92ad458d1b6.png",
     "parent_id": null,
     "status": 1
   },
@@ -13,7 +13,7 @@
     "name": "Pagdi",
     "slug": "pagdi",
     "description": "Handcrafted traditional crown turbans adorned with peacock feather motifs, micro pearls, and shimmering golden zardozi work for royal Thakur Ji shringar.",
-    "image_url": "/category/pagdi.png",
+    "image_url": "https://apiapp.hotelmahalaiims.com/uploads/products/1787997512_6a92ad483580f.png",
     "parent_id": null,
     "status": 1
   },
@@ -22,7 +22,7 @@
     "name": "Kundan Shringar",
     "slug": "kundan-shringar",
     "description": "Gleaming pure kundan haar, matching tilaks, bangles, and meenakari jewellery kits designed specifically for divine deity shringar.",
-    "image_url": "/category/kundan.png",
+    "image_url": "https://apiapp.hotelmahalaiims.com/uploads/products/1787997513_6a92ad495a41c.png",
     "parent_id": null,
     "status": 1
   },
@@ -31,7 +31,7 @@
     "name": "Special",
     "slug": "special",
     "description": "Complete festive devotional combos including embroidered poshak, matching pagdi, patka, and brass flute for Janmashtami and auspicious celebrations.",
-    "image_url": "/category/best-selling.png",
+    "image_url": "https://apiapp.hotelmahalaiims.com/uploads/products/1787997509_6a92ad458d1b6.png",
     "parent_id": null,
     "status": 1
   }

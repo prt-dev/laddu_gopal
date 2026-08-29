@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { ProductItem } from "@/app/data/products";
+import { ProductItem } from "@/app/services/productService";
 import AddToCartButton from "@/app/components/web/AddToCartButton";
 
 export type { ProductItem };
@@ -20,20 +20,25 @@ export default function ProductCard({
   onSelectSize,
   onSelectCategory,
 }: ProductCardProps) {
+  const sizes = product.sizes || ["Size 0", "Size 1", "Size 2", "Size 3", "Size 4", "Size 5", "Size 6"];
   const [internalSize, setInternalSize] = useState<string>(
-    controlledSize || product.sizes[0] || "Size 0"
+    controlledSize || sizes[0] || "Size 0"
   );
 
   const activeSize = controlledSize !== undefined ? controlledSize : internalSize;
 
   const handleSizeClick = (size: string) => {
     setInternalSize(size);
-    if (onSelectSize) {
+    if (onSelectSize && product.id) {
       onSelectSize(product.id, size);
     }
   };
 
-  const detailUrl = `/shop-detail?id=${product.id}&size=${encodeURIComponent(activeSize)}`;
+  const detailUrl = `/shop-detail?id=${product.id || 1}&size=${encodeURIComponent(activeSize)}`;
+  const displayImage = product.img || product.image_url || "/assets/best-selling.png";
+  const displayDesc = product.desc || product.description || "";
+  const displayCategory = product.category || "Poshak";
+  const displayPrice = typeof product.price === "number" ? `₹${product.price.toFixed(2)}` : product.price;
 
   return (
     <div className="flex flex-col rounded-lg border border-[#fff0ad] bg-white overflow-hidden shadow-xs hover:shadow-md transition-shadow">
@@ -44,9 +49,9 @@ export default function ProductCard({
           className="h-full w-full flex items-center justify-center"
         >
           <img
-            src={product.img}
+            src={displayImage}
             className="h-full w-full object-contain transition-transform duration-300 hover:scale-105"
-            alt={product.name}
+            alt={product.name || "Product Image"}
           />
         </Link>
         <button
@@ -55,16 +60,16 @@ export default function ProductCard({
             e.preventDefault();
             e.stopPropagation();
             if (onSelectCategory) {
-              onSelectCategory(product.category);
+              onSelectCategory(displayCategory);
             }
           }}
           className={`absolute top-2.5 left-2.5 rounded px-2 py-0.5 text-[10px] font-bold text-white shadow-xs border-0 transition ${onSelectCategory
             ? "bg-[#d20b4f] hover:bg-[#b80943] cursor-pointer hover:scale-105"
             : "bg-[#d20b4f] pointer-events-none"
             }`}
-          title={onSelectCategory ? `Filter by ${product.category}` : undefined}
+          title={onSelectCategory ? `Filter by ${displayCategory}` : undefined}
         >
-          {product.category}
+          {displayCategory}
         </button>
       </div>
 
@@ -82,14 +87,14 @@ export default function ProductCard({
           </h3>
         </Link>
 
-        {product.desc && (
+        {displayDesc && (
           <p className="text-xs text-gray-600 line-clamp-2 mb-2.5">
-            {product.desc}
+            {displayDesc}
           </p>
         )}
 
         {/* Available Sizes to Click */}
-        {product.sizes && product.sizes.length > 0 && (
+        {sizes && sizes.length > 0 && (
           <div className="mb-3 pt-2 border-t border-[#fff0ad]/70">
             <div className="flex items-center justify-between text-[11px] mb-1.5">
               <span className="font-bold text-gray-700">Available Sizes:</span>
@@ -98,7 +103,7 @@ export default function ProductCard({
               </span>
             </div>
             <div className="flex flex-wrap gap-1">
-              {product.sizes.map((size) => {
+              {sizes.map((size) => {
                 const isSelected = activeSize === size;
                 const sizeNumber = size.replace("Size ", "No. ");
                 return (
@@ -123,19 +128,17 @@ export default function ProductCard({
         {/* Price & Add to Cart */}
         <div className="flex items-center justify-between pt-2 border-t border-[#fff0ad] mt-auto">
           <span className="text-sm font-bold text-[#d20b4f]">
-            {product.price}
+            {displayPrice}
           </span>
           <AddToCartButton
-            productId={product.id}
+            productId={product.id || 1}
             variant={activeSize}
-            price={product.price}
+            price={product.price || 0}
             quantity={1}
-            product={product}
+            product={product as any}
           />
         </div>
       </div>
     </div>
   );
 }
-
-

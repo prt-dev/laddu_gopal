@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import ProductCard from "./ProductCard";
-import { allProducts, ProductItem } from "@/app/data/products";
+import { ProductItem } from "@/app/services/productService";
 
-export const defaultProducts: ProductItem[] = allProducts;
 export type { ProductItem };
 
 interface ShopProductsProps {
@@ -18,7 +17,7 @@ interface ShopProductsProps {
 }
 
 export default function ShopProducts({
-  products = defaultProducts,
+  products = [],
   filterCategory,
   filterSize,
   searchQuery,
@@ -26,13 +25,7 @@ export default function ShopProducts({
   onSelectCategory,
   onClearFilters,
 }: ShopProductsProps) {
-  const [selectedSizes, setSelectedSizes] = useState<{ [key: number]: string }>(() => {
-    const initial: { [key: number]: string } = {};
-    products.forEach((p) => {
-      initial[p.id] = p.sizes[0];
-    });
-    return initial;
-  });
+  const [selectedSizes, setSelectedSizes] = useState<{ [key: number]: string }>({});
 
   const handleSelectSize = (productId: number, size: string) => {
     setSelectedSizes((prev) => ({
@@ -44,13 +37,13 @@ export default function ShopProducts({
   // 1. Filter by category
   let filtered = filterCategory
     ? products.filter(
-      (p) => p.category.toLowerCase() === filterCategory.toLowerCase()
+      (p) => (p.category || "").toLowerCase() === filterCategory.toLowerCase()
     )
     : products;
 
   // 2. Filter by size
   if (filterSize) {
-    filtered = filtered.filter((p) => p.sizes.includes(filterSize));
+    filtered = filtered.filter((p) => (p.sizes || []).includes(filterSize));
   }
 
   // 3. Filter by search query
@@ -58,23 +51,24 @@ export default function ShopProducts({
     const q = searchQuery.toLowerCase().trim();
     filtered = filtered.filter(
       (p) =>
-        p.name.toLowerCase().includes(q) ||
-        (p.desc && p.desc.toLowerCase().includes(q)) ||
-        p.category.toLowerCase().includes(q)
+        (p.name || "").toLowerCase().includes(q) ||
+        (p.desc || p.description || "").toLowerCase().includes(q) ||
+        (p.category || "").toLowerCase().includes(q) ||
+        (p.sku || "").toLowerCase().includes(q)
     );
   }
 
   // 4. Sort
   if (sortBy === "low-to-high") {
     filtered = [...filtered].sort((a, b) => {
-      const pA = parseFloat(a.price.replace(/[^\d.]/g, "")) || 0;
-      const pB = parseFloat(b.price.replace(/[^\d.]/g, "")) || 0;
+      const pA = typeof a.price === "number" ? a.price : parseFloat(String(a.price || 0)) || 0;
+      const pB = typeof b.price === "number" ? b.price : parseFloat(String(b.price || 0)) || 0;
       return pA - pB;
     });
   } else if (sortBy === "high-to-low") {
     filtered = [...filtered].sort((a, b) => {
-      const pA = parseFloat(a.price.replace(/[^\d.]/g, "")) || 0;
-      const pB = parseFloat(b.price.replace(/[^\d.]/g, "")) || 0;
+      const pA = typeof a.price === "number" ? a.price : parseFloat(String(a.price || 0)) || 0;
+      const pB = typeof b.price === "number" ? b.price : parseFloat(String(b.price || 0)) || 0;
       return pB - pA;
     });
   } else if (sortBy === "bestseller") {
@@ -88,8 +82,8 @@ export default function ShopProducts({
           {filtered.map((product) => (
             <ProductCard
               key={product.id}
-              product={product}
-              selectedSize={selectedSizes[product.id]}
+              product={product as any}
+              selectedSize={product.id ? selectedSizes[product.id] : undefined}
               onSelectSize={handleSelectSize}
               onSelectCategory={onSelectCategory}
             />
@@ -120,6 +114,3 @@ export default function ShopProducts({
     </div>
   );
 }
-
-
-

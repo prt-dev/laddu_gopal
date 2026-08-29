@@ -3,8 +3,11 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import ShopSidebar from "./ShopSidebar";
-import ShopProducts, { defaultProducts } from "./ShopProducts";
+import ShopProducts from "./ShopProducts";
 import { CategoryItem } from "./ShopSidebarCategories";
+import { getProducts, ProductItem } from "@/app/services/productService";
+import { getCategories } from "@/app/services/categoryService";
+import Spinner from "./Spinner";
 
 export default function ShopSection() {
   const searchParams = useSearchParams();
@@ -12,10 +15,44 @@ export default function ShopSection() {
   const initialSize = searchParams.get("size") || "";
   const initialQuery = searchParams.get("q") || "";
 
+  const [products, setProducts] = useState<ProductItem[]>([]);
+  const [categoriesList, setCategoriesList] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
   const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory);
   const [selectedSize, setSelectedSize] = useState<string>(initialSize);
   const [searchQuery, setSearchQuery] = useState<string>(initialQuery);
   const [sortBy, setSortBy] = useState<string>("");
+
+  // Fetch products and categories dynamically from API
+  useEffect(() => {
+    let isMounted = true;
+    async function loadData() {
+      try {
+        setIsLoading(true);
+        const [prodRes, catRes] = await Promise.all([
+          getProducts({ limit: 50 }),
+          getCategories({ limit: 50 }),
+        ]);
+
+        if (isMounted) {
+          setProducts(prodRes.products || []);
+          setCategoriesList(catRes.categories || []);
+        }
+      } catch (err) {
+        console.error("Error loading products/categories:", err);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadData();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Sync state when URL params change (e.g. from navbar, footer, or explore buttons)
   useEffect(() => {
@@ -39,22 +76,40 @@ export default function ShopSection() {
     }
   }, [searchParams]);
 
-  // Extract unique category tags dynamically from products
+  // Extract dynamic category counts and list
   const uniqueCategories: CategoryItem[] = useMemo(() => {
-    const rawCategories = Array.from(
-      new Set(defaultProducts.map((p) => p.category))
-    );
-    return [
-      { label: "All Items", count: defaultProducts.length, value: "" },
-      ...rawCategories.map((cat) => ({
-        label: cat,
-        value: cat,
-        count: defaultProducts.filter(
-          (p) => p.category.toLowerCase() === cat.toLowerCase()
-        ).length,
-      })),
+    const totalCount = products.length;
+    const catItems: CategoryItem[] = [
+      { label: "All Items", count: totalCount, value: "" },
     ];
-  }, []);
+
+    if (categoriesList.length > 0) {
+      categoriesList.forEach((c) => {
+        const cName = c.name || "";
+        const count = products.filter(
+          (p) =>
+            p.category_id === c.id ||
+            (p.category && p.category.toLowerCase() === cName.toLowerCase())
+        ).length;
+        catItems.push({
+          label: cName,
+          value: cName,
+          count,
+        });
+      });
+    } else {
+      const rawCategories = Array.from(new Set(products.map((p) => p.category || ""))).filter(Boolean);
+      rawCategories.forEach((cat) => {
+        catItems.push({
+          label: cat,
+          value: cat,
+          count: products.filter((p) => (p.category || "").toLowerCase() === cat.toLowerCase()).length,
+        });
+      });
+    }
+
+    return catItems;
+  }, [products, categoriesList]);
 
   const handleSelectCategory = (category: string) => {
     setSelectedCategory((prev) =>
@@ -159,25 +214,30 @@ export default function ShopSection() {
       )}
 
       {/* Main Content Area */}
-      <div className="flex flex-col lg:flex-row gap-6">
-        <ShopProducts
-          filterCategory={selectedCategory}
-          filterSize={selectedSize}
-          searchQuery={searchQuery}
-          sortBy={sortBy}
-          onSelectCategory={handleSelectCategory}
-          onClearFilters={handleClearAllFilters}
-        />
-        <ShopSidebar
-          categories={uniqueCategories}
-          selectedCategory={selectedCategory}
-          onSelectCategory={handleSelectCategory}
-          selectedSize={selectedSize}
-          onSelectSize={handleSelectSize}
-        />
-      </div>
+      {isLoading ? (
+        <div className="py-20 flex justify-center items-center">
+          <Spinner />
+        </div>
+      ) : (
+        <div className="flex flex-col lg:flex-row gap-6">
+          <ShopProducts
+            products={products}
+            filterCategory={selectedCategory}
+            filterSize={selectedSize}
+            searchQuery={searchQuery}
+            sortBy={sortBy}
+            onSelectCategory={handleSelectCategory}
+            onClearFilters={handleClearAllFilters}
+          />
+          <ShopSidebar
+            categories={uniqueCategories}
+            selectedCategory={selectedCategory}
+            onSelectCategory={handleSelectCategory}
+            selectedSize={selectedSize}
+            onSelectSize={handleSelectSize}
+          />
+        </div>
+      )}
     </div>
   );
 }
-
-

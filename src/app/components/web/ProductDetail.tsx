@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { getProductById, ProductItem } from "@/app/data/products";
+import { getProductById, ProductItem } from "@/app/services/productService";
 import AddToCartButton from "@/app/components/web/AddToCartButton";
+import Spinner from "@/app/components/web/Spinner";
 
 interface ProductDetailProps {
   productId?: number | string;
@@ -11,22 +12,51 @@ interface ProductDetailProps {
 }
 
 export default function ProductDetail({ productId, initialSize }: ProductDetailProps) {
-  const product: ProductItem = getProductById(productId);
-
-  const [selectedSize, setSelectedSize] = useState<string>(() => {
-    if (initialSize && product.sizes.includes(initialSize)) {
-      return initialSize;
-    }
-    return product.sizes[0] || "Size 0";
-  });
+  const [product, setProduct] = useState<ProductItem | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [selectedSize, setSelectedSize] = useState<string>(initialSize || "Size 0");
 
   useEffect(() => {
-    if (initialSize && product.sizes.includes(initialSize)) {
-      setSelectedSize(initialSize);
-    } else {
-      setSelectedSize(product.sizes[0] || "Size 0");
+    let isMounted = true;
+    async function loadProduct() {
+      if (!productId) return;
+      try {
+        setIsLoading(true);
+        const data = await getProductById(productId);
+        if (isMounted) {
+          setProduct(data);
+          const sizes = data.sizes || ["Size 0", "Size 1", "Size 2", "Size 3", "Size 4", "Size 5", "Size 6"];
+          if (initialSize && sizes.includes(initialSize)) {
+            setSelectedSize(initialSize);
+          } else {
+            setSelectedSize(sizes[0] || "Size 0");
+          }
+        }
+      } catch (err) {
+        console.error("Error loading product detail:", err);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
     }
-  }, [product.id, initialSize]);
+
+    loadProduct();
+    return () => {
+      isMounted = false;
+    };
+  }, [productId, initialSize]);
+
+  if (isLoading || !product) {
+    return (
+      <div className="w-full lg:w-3/4 flex justify-center items-center py-24 bg-white rounded border border-[#fff0ad]">
+        <Spinner />
+      </div>
+    );
+  }
+
+  const sizes = product.sizes || ["Size 0", "Size 1", "Size 2", "Size 3", "Size 4", "Size 5", "Size 6"];
+  const formattedPrice = typeof product.price === "number" ? `₹${product.price.toFixed(2)}` : product.price;
 
   return (
     <div className="w-full lg:w-3/4">
@@ -35,13 +65,15 @@ export default function ProductDetail({ productId, initialSize }: ProductDetailP
           {/* Image */}
           <div className="flex items-center justify-center rounded bg-[#fff0ad]/40 p-6 border border-[#fff0ad] relative overflow-hidden">
             <img
-              src={product.img}
+              src={product.img || product.image_url || "/assets/best-selling.png"}
               alt={product.name}
               className="max-h-72 w-auto object-contain transition-transform duration-300 hover:scale-105"
             />
-            <span className="absolute top-3 left-3 rounded bg-[#d20b4f] px-2.5 py-1 text-[11px] font-bold text-white shadow-xs">
-              {product.category}
-            </span>
+            {product.category && (
+              <span className="absolute top-3 left-3 rounded bg-[#d20b4f] px-2.5 py-1 text-[11px] font-bold text-white shadow-xs">
+                {product.category}
+              </span>
+            )}
           </div>
 
           {/* Info */}
@@ -49,7 +81,7 @@ export default function ProductDetail({ productId, initialSize }: ProductDetailP
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <span className="rounded bg-[#fff0ad] px-2.5 py-0.5 text-[11px] font-bold text-[#d20b4f]">
-                  In Stock &bull; Sacred Seva Delivery
+                  In Stock &bull; SKU: {product.sku || "N/A"}
                 </span>
               </div>
 
@@ -58,7 +90,7 @@ export default function ProductDetail({ productId, initialSize }: ProductDetailP
               </h1>
 
               <div className="flex items-baseline gap-3">
-                <span className="text-2xl font-bold text-[#d20b4f]">{product.price}</span>
+                <span className="text-2xl font-bold text-[#d20b4f]">{formattedPrice}</span>
                 {product.oldPrice && (
                   <span className="text-sm text-gray-500 line-through">
                     {product.oldPrice}
@@ -67,7 +99,7 @@ export default function ProductDetail({ productId, initialSize }: ProductDetailP
               </div>
 
               <p className="mt-4 text-sm leading-[1.6] text-black">
-                {product.desc}
+                {product.desc || product.description}
               </p>
 
               {/* Size Selector */}
@@ -81,7 +113,7 @@ export default function ProductDetail({ productId, initialSize }: ProductDetailP
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {product.sizes.map((size) => {
+                  {sizes.map((size) => {
                     const isSelected = selectedSize === size;
                     const sizeNumber = size.replace("Size ", "No. ");
                     return (
@@ -105,10 +137,11 @@ export default function ProductDetail({ productId, initialSize }: ProductDetailP
             {/* Action Buttons */}
             <div className="mt-6 pt-4 border-t border-[#fff0ad] flex flex-wrap items-center gap-3">
               <AddToCartButton
-                productId={product.id}
+                productId={product.id || 1}
                 variant={selectedSize}
-                price={product.price}
+                price={product.price || 0}
                 quantity={1}
+                product={product as any}
                 className="px-6 py-2.5 text-sm"
                 showIcon={true}
                 loadingText="Adding to Basket..."

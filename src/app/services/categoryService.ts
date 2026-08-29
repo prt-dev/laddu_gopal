@@ -1,4 +1,5 @@
 import { BASE_URL } from "@/app/services/authService";
+import localCategories from "@/app/data/categories.json";
 
 export interface CategoryItem {
   id?: number;
@@ -20,13 +21,29 @@ export interface GetCategoriesParams {
   status?: number;
 }
 
+export interface GetCategoriesResponse {
+  total: number;
+  categories: CategoryItem[];
+  items: CategoryItem[];
+}
+
+function getStoredToken(): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  return (
+    localStorage.getItem("admin_token") ||
+    localStorage.getItem("web_customer_token") ||
+    undefined
+  );
+}
+
 /**
- * Fetch all categories with optional search, pagination, and status filters
+ * Fetch all categories with optional search, pagination, and status filters with fallback
  */
 export async function getCategories(
   { page = 1, limit = 50, search = "", parent_id, status }: GetCategoriesParams = {},
   token?: string
-) {
+): Promise<GetCategoriesResponse> {
+  const authToken = token || getStoredToken();
   const params = new URLSearchParams();
   params.append("page", page.toString());
   params.append("limit", limit.toString());
@@ -48,77 +65,106 @@ export async function getCategories(
     Accept: "application/json",
   };
 
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
+  if (authToken) {
+    headers["Authorization"] = `Bearer ${authToken}`;
   }
 
-  const response = await fetch(url, {
-    method: "GET",
-    headers,
-  });
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      headers,
+    });
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.detail || errorData.message || "Failed to fetch categories"
-    );
+    if (!response.ok) {
+      throw new Error("Failed to fetch categories from API");
+    }
+
+    const data = await response.json();
+    const rawCategories: CategoryItem[] = data.categories || data.items || data.data || (Array.isArray(data) ? data : []);
+
+    return {
+      total: data.total ?? rawCategories.length,
+      categories: rawCategories,
+      items: rawCategories,
+    };
+  } catch (err) {
+    console.warn("getCategories fallback to local categories:", err);
+    let fallback = [...localCategories] as CategoryItem[];
+    if (search?.trim()) {
+      const q = search.toLowerCase().trim();
+      fallback = fallback.filter(
+        (c) =>
+          c.name?.toLowerCase().includes(q) ||
+          c.slug?.toLowerCase().includes(q) ||
+          c.description?.toLowerCase().includes(q)
+      );
+    }
+    return {
+      total: fallback.length,
+      categories: fallback,
+      items: fallback,
+    };
   }
-
-  return response.json();
 }
 
 /**
  * Fetch single category by ID
  */
-export async function getCategoryById(categoryId: number, token?: string) {
+export async function getCategoryById(categoryId: number, token?: string): Promise<CategoryItem> {
+  const authToken = token || getStoredToken();
   const headers: Record<string, string> = {
     Accept: "application/json",
   };
 
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
+  if (authToken) {
+    headers["Authorization"] = `Bearer ${authToken}`;
   }
 
-  const response = await fetch(`${BASE_URL}/categories/${categoryId}`, {
-    method: "GET",
-    headers,
-  });
+  try {
+    const response = await fetch(`${BASE_URL}/categories/${categoryId}`, {
+      method: "GET",
+      headers,
+    });
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.detail || errorData.message || "Failed to fetch category"
-    );
+    if (!response.ok) {
+      throw new Error(`Failed to fetch category ${categoryId}`);
+    }
+
+    return await response.json();
+  } catch (err) {
+    const found = localCategories.find((c) => c.id === categoryId) || localCategories[0];
+    return found as CategoryItem;
   }
-
-  return response.json();
 }
 
 /**
  * Fetch single category by slug
  */
-export async function getCategoryBySlug(slug: string, token?: string) {
+export async function getCategoryBySlug(slug: string, token?: string): Promise<CategoryItem> {
+  const authToken = token || getStoredToken();
   const headers: Record<string, string> = {
     Accept: "application/json",
   };
 
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
+  if (authToken) {
+    headers["Authorization"] = `Bearer ${authToken}`;
   }
 
-  const response = await fetch(`${BASE_URL}/categories/slug/${encodeURIComponent(slug)}`, {
-    method: "GET",
-    headers,
-  });
+  try {
+    const response = await fetch(`${BASE_URL}/categories/slug/${encodeURIComponent(slug)}`, {
+      method: "GET",
+      headers,
+    });
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.detail || errorData.message || "Failed to fetch category by slug"
-    );
+    if (!response.ok) {
+      throw new Error(`Failed to fetch category by slug ${slug}`);
+    }
+
+    return await response.json();
+  } catch (err) {
+    const found = localCategories.find((c) => c.slug === slug) || localCategories[0];
+    return found as CategoryItem;
   }
-
-  return response.json();
 }
 
 /**
@@ -194,6 +240,3 @@ export async function deleteCategoryApi(categoryId: number, token: string) {
 
   return response.json();
 }
-
-
-

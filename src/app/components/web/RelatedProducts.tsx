@@ -1,16 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ProductCard from "./ProductCard";
-import { getRelatedProducts, ProductItem } from "@/app/data/products";
+import { getProducts, ProductItem } from "@/app/services/productService";
 
 interface RelatedProductsProps {
-  currentId?: number;
+  currentId?: number | string;
 }
 
 export default function RelatedProducts({ currentId = 1 }: RelatedProductsProps) {
-  const related: ProductItem[] = getRelatedProducts(currentId, 3);
+  const [related, setRelated] = useState<ProductItem[]>([]);
   const [selectedSizes, setSelectedSizes] = useState<{ [key: number]: string }>({});
+
+  const numericCurrentId = typeof currentId === "string" ? parseInt(currentId, 10) : currentId;
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadRelated() {
+      try {
+        const res = await getProducts({ limit: 10 });
+        if (isMounted) {
+          const filtered = res.products.filter((p) => p.id !== numericCurrentId).slice(0, 3);
+          setRelated(filtered);
+        }
+      } catch (err) {
+        console.error("Error loading related products:", err);
+      }
+    }
+    loadRelated();
+    return () => {
+      isMounted = false;
+    };
+  }, [numericCurrentId]);
 
   const handleSelectSize = (productId: number, size: string) => {
     setSelectedSizes((prev) => ({
@@ -18,6 +39,8 @@ export default function RelatedProducts({ currentId = 1 }: RelatedProductsProps)
       [productId]: size,
     }));
   };
+
+  if (related.length === 0) return null;
 
   return (
     <div className="mt-12 border-t border-[#fff0ad] pt-8">
@@ -28,8 +51,8 @@ export default function RelatedProducts({ currentId = 1 }: RelatedProductsProps)
         {related.map((product) => (
           <ProductCard
             key={product.id}
-            product={product}
-            selectedSize={selectedSizes[product.id]}
+            product={product as any}
+            selectedSize={product.id ? selectedSizes[product.id] : undefined}
             onSelectSize={handleSelectSize}
           />
         ))}
