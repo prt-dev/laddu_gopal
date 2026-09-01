@@ -5,6 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useWebAuth } from "@/app/context/WebAuthContext";
 import Loading from "@/app/components/common/Loading";
 
+import { PUBLIC_ROUTE_PATHS, AUTH_ROUTE_PATHS } from "@/app/config/links";
+
 interface Props {
   children: React.ReactNode;
 }
@@ -15,24 +17,11 @@ export default function WebProtectedRoute({ children }: Props) {
   const pathname = usePathname();
 
   const isPublicWebPage =
-    pathname === "/" ||
-    pathname === "/login" ||
-    pathname === "/register" ||
-    pathname === "/forgot-password" ||
-    pathname === "/shop" ||
-    pathname === "/shop-detail" ||
-    pathname === "/blog-preview" ||
-    pathname === "/contact" ||
-    pathname === "/cart" ||
-    pathname === "/checkout" ||
-    pathname === "/testimonial" ||
+    PUBLIC_ROUTE_PATHS.includes(pathname) ||
     pathname?.startsWith("/shop") ||
     pathname?.startsWith("/blog");
 
-  const isAuthPage =
-    pathname === "/login" ||
-    pathname === "/register" ||
-    pathname === "/forgot-password";
+  const isAuthPage = AUTH_ROUTE_PATHS.includes(pathname);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated && !isPublicWebPage) {
