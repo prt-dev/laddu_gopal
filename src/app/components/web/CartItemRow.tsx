@@ -1,20 +1,12 @@
 "use client";
 
 import React from "react";
+import { CartItem } from "@/app/services/cartService";
 
-export interface CartItemType {
-  id: number | string;
-  product_id?: number | string;
-  img: string;
-  name: string;
-  price: number;
-  quantity: number;
-  size?: string;
-  variant?: string;
-}
+export type { CartItem as CartItemType };
 
 interface CartItemRowProps {
-  item: CartItemType;
+  item: CartItem;
   onUpdateQuantity: (id: number | string, delta: number, variant?: string) => void;
   onRemove: (id: number | string, variant?: string) => void;
 }
@@ -24,15 +16,25 @@ export default function CartItemRow({
   onUpdateQuantity,
   onRemove,
 }: CartItemRowProps) {
+  const itemId = item.id ?? item.product_id ?? 0;
+  const itemImg = item.img || item.product?.img || item.product?.image_url || "/assets/best-selling.png";
+  const itemName = item.name || item.product?.name || "Sacred Item";
+  const itemPrice =
+    typeof item.price === "number"
+      ? item.price
+      : parseFloat(String(item.price || "0").replace(/[^0-9.]/g, "")) || 0;
+  const itemQty = Number(item.quantity) || 1;
+  const itemSize = item.variant || item.size;
+
   return (
     <tr className="hover:bg-[#fff0ad]/20 transition">
       {/* Product Thumbnail */}
       <td className="py-3 px-4">
         <div className="h-14 w-14 rounded-md bg-[#fff0ad]/60 p-1 flex items-center justify-center border border-[#fff0ad] overflow-hidden shadow-2xs">
           <img
-            src={item.img}
+            src={itemImg}
             className="h-full w-full object-contain transition-transform hover:scale-105"
-            alt={item.name}
+            alt={itemName}
           />
         </div>
       </td>
@@ -40,26 +42,26 @@ export default function CartItemRow({
       {/* Product Name & Details */}
       <td className="py-3 px-4">
         <div className="font-bold text-black heading-font text-sm">
-          {item.name}
+          {itemName}
         </div>
-        {item.size && (
+        {itemSize && (
           <span className="inline-block mt-0.5 rounded bg-[#fff0ad] px-2 py-0.5 text-[10px] font-bold text-[#d20b4f]">
-            {item.size}
+            {itemSize}
           </span>
         )}
       </td>
 
       {/* Unit Price */}
       <td className="py-3 px-4 font-bold text-[#d20b4f] text-sm">
-        ₹{item.price.toFixed(2)}
+        ₹{itemPrice.toFixed(2)}
       </td>
 
       {/* Quantity Selector */}
       <td className="py-3 px-4">
         <div className="flex items-center gap-1.5 bg-[#fff0ad]/40 p-1 rounded border border-[#fff0ad] w-fit">
           <button
-            onClick={() => onUpdateQuantity(item.id, -1, item.variant || item.size)}
-            disabled={item.quantity <= 1}
+            onClick={() => onUpdateQuantity(itemId, -1, itemSize)}
+            disabled={itemQty <= 1}
             className="h-6 w-6 rounded bg-white font-bold text-black hover:bg-[#d20b4f] hover:text-white disabled:opacity-40 disabled:hover:bg-white disabled:hover:text-black transition flex items-center justify-center border border-gray-200 cursor-pointer text-xs disabled:cursor-not-allowed shadow-2xs"
             type="button"
             title="Decrease quantity"
@@ -67,10 +69,10 @@ export default function CartItemRow({
             -
           </button>
           <span className="w-7 text-center font-bold text-xs text-black">
-            {item.quantity}
+            {itemQty}
           </span>
           <button
-            onClick={() => onUpdateQuantity(item.id, 1, item.variant || item.size)}
+            onClick={() => onUpdateQuantity(itemId, 1, itemSize)}
             className="h-6 w-6 rounded bg-white font-bold text-black hover:bg-[#d20b4f] hover:text-white transition flex items-center justify-center border border-gray-200 cursor-pointer text-xs shadow-2xs"
             type="button"
             title="Increase quantity"
@@ -82,13 +84,13 @@ export default function CartItemRow({
 
       {/* Subtotal */}
       <td className="py-3 px-4 font-bold text-black text-sm">
-        ₹{(item.price * item.quantity).toFixed(2)}
+        ₹{(itemPrice * itemQty).toFixed(2)}
       </td>
 
       {/* Remove Action */}
       <td className="py-3 px-4 text-center">
         <button
-          onClick={() => onRemove(item.id, item.variant || item.size)}
+          onClick={() => onRemove(itemId, itemSize)}
           className="h-7 w-7 rounded-full text-red-500 hover:text-white hover:bg-red-500 transition flex items-center justify-center mx-auto border-0 bg-transparent cursor-pointer"
           title="Remove item from cart"
           type="button"

@@ -236,7 +236,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
               String(c.product_id) === String(id)) &&
             (variant !== undefined ? (c.variant || c.size) === variant : true)
         );
-        if (found) {
+        if (found && found.id !== undefined) {
           try {
             await updateCartItemApi(
               found.id,

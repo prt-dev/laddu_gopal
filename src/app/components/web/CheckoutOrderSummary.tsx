@@ -67,35 +67,49 @@ export default function CheckoutOrderSummary() {
 
       {/* Items list */}
       <div className="space-y-3 divide-y divide-[#d20b4f]/10 max-h-72 overflow-y-auto pr-1">
-        {items.map((item, i) => (
-          <div key={`${item.id}-${item.variant || item.size || i}`} className="flex items-center justify-between pt-2">
-            <div className="flex items-center gap-2.5">
-              <div className="h-11 w-11 rounded bg-white p-1 flex items-center justify-center flex-shrink-0 border border-[#fff0ad]">
-                <img
-                  src={item.img}
-                  className="h-full w-full object-contain"
-                  alt={item.name}
-                />
+        {items.map((item, i) => {
+          const itemPrice =
+            typeof item.price === "number"
+              ? item.price
+              : parseFloat(String(item.price || "0").replace(/[^0-9.]/g, "")) || 0;
+          const itemQty = Number(item.quantity) || 1;
+          const itemImg = item.img || item.product?.img || item.product?.image_url || "/assets/best-selling.png";
+          const itemName = item.name || item.product?.name || "Sacred Item";
+          const itemVariant = item.variant || item.size;
+
+          return (
+            <div
+              key={`${item.id ?? item.product_id ?? i}-${itemVariant || ""}`}
+              className="flex items-center justify-between pt-2"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="h-11 w-11 rounded bg-white p-1 flex items-center justify-center flex-shrink-0 border border-[#fff0ad]">
+                  <img
+                    src={itemImg}
+                    className="h-full w-full object-contain"
+                    alt={itemName}
+                  />
+                </div>
+                <div>
+                  <h6 className="heading-font text-xs font-bold text-black mb-0.5" title={itemName}>
+                    {itemName}
+                    {itemVariant && (
+                      <span className="text-[10px] text-[#d20b4f] ml-1">
+                        ({itemVariant})
+                      </span>
+                    )}
+                  </h6>
+                  <span className="text-[10px] text-gray-700 font-semibold">
+                    Qty: {itemQty} &bull; ₹{itemPrice.toFixed(2)} each
+                  </span>
+                </div>
               </div>
-              <div>
-                <h6 className="heading-font text-xs font-bold text-black mb-0.5" title={item.name}>
-                  {item.name}
-                  {(item.variant || item.size) && (
-                    <span className="text-[10px] text-[#d20b4f] ml-1">
-                      ({item.variant || item.size})
-                    </span>
-                  )}
-                </h6>
-                <span className="text-[10px] text-gray-700 font-semibold">
-                  Qty: {item.quantity} &bull; ₹{item.price.toFixed(2)} each
-                </span>
-              </div>
+              <span className="text-xs font-bold text-[#d20b4f] whitespace-nowrap ml-2">
+                ₹{(itemPrice * itemQty).toFixed(2)}
+              </span>
             </div>
-            <span className="text-xs font-bold text-[#d20b4f] whitespace-nowrap ml-2">
-              ₹{(item.price * item.quantity).toFixed(2)}
-            </span>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Price breakdown */}
