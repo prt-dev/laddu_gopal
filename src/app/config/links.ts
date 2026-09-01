@@ -34,7 +34,7 @@ export const NAV_LINKS: WebLinkItem[] = [
   {
     id: "nav-blogs",
     name: "Blogs",
-    href: "/blog-preview",
+    href: "/blogs",
     category: "resources",
     description: "Devotional stories, Janmashtami seva guides & spiritual articles",
     isPublic: true,
@@ -62,7 +62,7 @@ export const RESOURCE_LINKS: WebLinkItem[] = [
   {
     id: "res-blogs",
     name: "Blogs & Stories",
-    href: "/blog-preview",
+    href: "/blogs",
     category: "resources",
     description: "Spiritual insights and deity seva tips",
     isPublic: true,
@@ -85,14 +85,14 @@ export const RESOURCE_LINKS: WebLinkItem[] = [
   },
 ];
 
-// 3. Customer Care, Legal & Policy Links
+// 3. Customer Care & Legal Policy Links
 export const POLICY_LINKS: WebLinkItem[] = [
   {
     id: "policy-terms",
     name: "Terms & Conditions",
     href: "/terms-and-conditions",
     category: "policies",
-    description: "Store usage rules, pricing, sizing & legal terms",
+    description: "Terms of service, usage guidelines, and purchasing rules",
     isPublic: true,
   },
   {
@@ -100,7 +100,7 @@ export const POLICY_LINKS: WebLinkItem[] = [
     name: "Refund & Cancellation",
     href: "/refund-policy",
     category: "policies",
-    description: "Returns, unboxing video criteria & refund timelines",
+    description: "Return, replacement, and 7-day refund guarantee terms",
     isPublic: true,
   },
   {
@@ -108,7 +108,7 @@ export const POLICY_LINKS: WebLinkItem[] = [
     name: "Privacy Policy",
     href: "/privacy-policy",
     category: "policies",
-    description: "Customer data protection, payment security & privacy guidelines",
+    description: "Information security, cookie policy, and user privacy protection",
     isPublic: true,
   },
   {
@@ -116,68 +116,76 @@ export const POLICY_LINKS: WebLinkItem[] = [
     name: "Shipping & Delivery",
     href: "/shipping-policy",
     category: "policies",
-    description: "Pan-India delivery times, courier partners & express shipping",
+    description: "Pan-India sacred packing and free expedited delivery terms",
     isPublic: true,
   },
 ];
 
-// 4. Authentication & Account Access Links
+// 4. Cart & Checkout Links
+export const CART_CHECKOUT_LINKS: WebLinkItem[] = [
+  {
+    id: "cart-basket",
+    name: "Devotional Basket",
+    href: "/cart",
+    category: "shop",
+    description: "Review your selected poshaks and items",
+    isPublic: true,
+  },
+  {
+    id: "cart-checkout",
+    name: "Sacred Checkout",
+    href: "/checkout",
+    category: "shop",
+    description: "Provide delivery address and complete order",
+    isPublic: true,
+  },
+];
+
+// 5. Authentication & Account Links
 export const AUTH_LINKS: WebLinkItem[] = [
   {
     id: "auth-login",
-    name: "Login",
+    name: "Devotee Login",
     href: "/login",
     category: "auth",
-    description: "Sign in to customer account",
+    description: "Access your saved addresses and order history",
     isPublic: true,
   },
   {
     id: "auth-register",
-    name: "Register",
+    name: "Create Account",
     href: "/register",
     category: "auth",
-    description: "Create a new devotee customer account",
+    description: "Join Makhan Chor devotee family",
     isPublic: true,
   },
   {
-    id: "auth-forgot-password",
+    id: "auth-forgot",
     name: "Forgot Password",
     href: "/forgot-password",
     category: "auth",
-    description: "Reset account login password",
+    description: "Reset your devotee portal login password",
     isPublic: true,
   },
 ];
 
-// 5. Checkout & Cart Flow Links
-export const CART_CHECKOUT_LINKS: WebLinkItem[] = [
-  {
-    id: "cart-view",
-    name: "Shopping Cart",
-    href: "/cart",
-    category: "account",
-    description: "View selected items, quantities & subtotal",
-    isPublic: true,
-  },
-  {
-    id: "checkout-page",
-    name: "Checkout",
-    href: "/checkout",
-    category: "account",
-    description: "Shipping address selection and payment confirmation",
-    isPublic: true,
-  },
-];
-
-// 6. Master Array of ALL Web Links
+// 6. Aggregated All Web Links Array
 export const ALL_WEB_LINKS: WebLinkItem[] = [
   ...NAV_LINKS,
   {
     id: "nav-shop-detail",
-    name: "Product Details",
+    name: "Product Detail",
     href: "/shop-detail",
     category: "shop",
     description: "Individual deity dress or accessory view",
+    isPublic: true,
+  },
+  {
+    id: "nav-blog-preview",
+    name: "Article Reader",
+    href: "/blog-preview",
+    category: "resources",
+    description: "Full devotional article and guide preview",
     isPublic: true,
   },
   ...CART_CHECKOUT_LINKS,
@@ -196,6 +204,8 @@ export const PUBLIC_ROUTE_PATHS: string[] = [
   "/forgot-password",
   "/shop",
   "/shop-detail",
+  "/blogs",
+  "/blog",
   "/blog-preview",
   "/contact",
   "/cart",

@@ -128,9 +128,12 @@ export default function Navbar() {
             </Link>
 
             <Link
-              href="/blog-preview"
-              className={`transition hover:text-black no-underline ${pathname === "/blog-preview" ? "text-black" : ""
-                }`}
+              href="/blogs"
+              className={`transition hover:text-black no-underline ${
+                pathname === "/blogs" || pathname === "/blog" || pathname === "/blog-preview"
+                  ? "text-black"
+                  : ""
+              }`}
             >
               Blogs
             </Link>
@@ -267,7 +270,7 @@ export default function Navbar() {
                 Category
               </Link>
               <Link
-                href="/blog-preview"
+                href="/blogs"
                 className="transition hover:text-black no-underline"
                 onClick={() => setIsNavOpen(false)}
               >
