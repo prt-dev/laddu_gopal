@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { addToCartApi } from "@/app/services/cartService";
-import { useWebAuth } from "@/app/context/WebAuthContext";
+import { useCart } from "@/app/context/CartContext";
 import { ProductItem as ApiProductItem } from "@/app/services/productService";
 import { ProductItem as StaticProductItem } from "@/app/data/products";
 
@@ -35,15 +34,9 @@ export default function AddToCartButton({
   onSuccess,
   onError,
 }: AddToCartButtonProps) {
-  const { token } = useWebAuth();
+  const { addToCart } = useCart();
   const [isAdding, setIsAdding] = useState<boolean>(false);
   const [addStatus, setAddStatus] = useState<"idle" | "success" | "error">("idle");
-
-  const parsePrice = (priceVal: number | string): number => {
-    if (typeof priceVal === "number") return priceVal;
-    const cleanStr = priceVal.replace(/[^0-9.]/g, "");
-    return parseFloat(cleanStr) || 0;
-  };
 
   const handleAddToCart = async (e?: React.MouseEvent) => {
     if (e) {
@@ -57,16 +50,15 @@ export default function AddToCartButton({
     setAddStatus("idle");
 
     try {
-      const numericPrice = parsePrice(price);
-      await addToCartApi(
-        {
-          product_id: Number(productId),
-          variant: variant || undefined, // variant is size of product
-          quantity: quantity,
-          price: numericPrice,
-        },
-        token || undefined
-      );
+      await addToCart({
+        product_id: productId,
+        variant: variant || "Standard Size",
+        price,
+        quantity,
+        name: product?.name,
+        img: product?.img || product?.image_url,
+        product: product as any,
+      });
 
       setAddStatus("success");
       if (onSuccess) {

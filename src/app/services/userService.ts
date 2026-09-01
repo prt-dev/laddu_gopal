@@ -82,3 +82,62 @@ export async function getUserProfileApi(token: string) {
 
     return response.json();
 }
+
+export interface UserSavePayload {
+    id?: number | string;
+    email?: string;
+    firstname?: string;
+    lastname?: string;
+    name?: string;
+    phone?: string;
+    username?: string;
+    password?: string;
+    role_id?: number;
+    status?: number;
+    address?: string;
+    city?: string;
+    state?: string;
+    pincode?: string;
+    notes?: string;
+    additional_details?: string;
+    [key: string]: unknown;
+}
+
+/**
+ * Save / Upsert user profile & billing details
+ * Endpoint: POST /api/v1/users/save
+ * Matching postman.json "Save / Upsert User (Create or Update)"
+ */
+export async function saveUserApi(
+    data: UserSavePayload,
+    token?: string | null,
+    userId?: number | string
+) {
+    const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+    };
+
+    if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const queryParams = userId ? `?user_id=${encodeURIComponent(userId)}` : "";
+    const url = `${BASE_URL}/users/save${queryParams}`;
+
+    const response = await fetch(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+            errorData.detail || errorData.message || "Failed to save user details"
+        );
+    }
+
+    return response.json();
+}
+

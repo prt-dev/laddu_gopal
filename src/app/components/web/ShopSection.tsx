@@ -8,6 +8,7 @@ import { CategoryItem } from "./ShopSidebarCategories";
 import { getProducts, ProductItem } from "@/app/services/productService";
 import { getCategories } from "@/app/services/categoryService";
 import Spinner from "./Spinner";
+import Loading from "@/app/components/common/Loading";
 
 export default function ShopSection() {
   const searchParams = useSearchParams();
@@ -215,8 +216,12 @@ export default function ShopSection() {
 
       {/* Main Content Area */}
       {isLoading ? (
-        <div className="py-20 flex justify-center items-center">
-          <Spinner />
+        <div className="py-16 flex justify-center items-center">
+          <Loading
+            variant="container"
+            size="lg"
+            message="Loading Sacred Devotional Collection..."
+          />
         </div>
       ) : (
         <div className="flex flex-col lg:flex-row gap-6">

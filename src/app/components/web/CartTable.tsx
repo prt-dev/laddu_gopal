@@ -1,172 +1,60 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import React, { useEffect, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import CartItemRow, { CartItemType } from "./CartItemRow";
-import {
-  getMyCartApi,
-  updateCartItemApi,
-  deleteCartItemApi,
-  CartItem,
-} from "@/app/services/cartService";
-import { useWebAuth } from "@/app/context/WebAuthContext";
+import CartItemRow from "./CartItemRow";
+import { useCart } from "@/app/context/CartContext";
 import { getProductById } from "@/app/services/productService";
+import Loading from "@/app/components/common/Loading";
 
 export default function CartTable() {
-  const { token, isAuthenticated } = useWebAuth();
+  const { items, isLoading, updateQuantity, removeFromCart, subtotal, addToCart } = useCart();
   const searchParams = useSearchParams();
-  const [items, setItems] = useState<CartItemType[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const router = useRouter();
+  const directAddedRef = useRef<boolean>(false);
 
-  // Fetch cart items from API if authenticated
-  const fetchCart = useCallback(async () => {
-    if (!token) {
-      setIsLoading(false);
-      return;
-    }
-    setIsLoading(true);
-    try {
-      const response = await getMyCartApi(token);
-      const cartList: CartItem[] = response.items || response.carts || (Array.isArray(response) ? response : []);
-
-      if (cartList && cartList.length > 0) {
-        const mappedItems: CartItemType[] = await Promise.all(
-          cartList.map(async (c: CartItem) => {
-            const localProd = c.product_id ? await getProductById(c.product_id) : null;
-            const prodPrice = localProd
-              ? typeof localProd.price === "number"
-                ? localProd.price
-                : parseFloat(String(localProd.price).replace(/[^0-9.]/g, "")) || 0
-              : 0;
-            return {
-              id: Number(c.id || c.product_id || Math.random()),
-              img: (c.product?.image_url as string) || localProd?.img || localProd?.image_url || "/assets/best-selling.png",
-              name: (c.product?.name as string) || localProd?.name || "Devotional Sacred Item",
-              size: c.variant || "Standard Size",
-              price: Number(c.price) || prodPrice,
-              quantity: c.quantity || 1,
-            };
-          })
-        );
-        setItems(mappedItems);
-      } else {
-        setItems([]);
-      }
-    } catch (error) {
-      console.warn("Could not fetch cart items from backend:", error);
-      setItems([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [token]);
-
+  // Check if URL has direct item query param (e.g., /cart?item=1&size=Size%202)
   useEffect(() => {
-    let isMounted = true;
+    const urlItemId = searchParams.get("item");
+    const urlSize = searchParams.get("size");
 
-    async function initializeCart() {
-      if (isAuthenticated && token) {
-        await fetchCart();
-      } else {
-        // Check if URL has item query param to add for direct preview
-        const urlItemId = searchParams.get("item");
-        const urlSize = searchParams.get("size");
-        if (urlItemId) {
-          try {
-            const found = await getProductById(Number(urlItemId));
-            if (found && isMounted) {
-              const foundPrice =
-                typeof found.price === "number"
-                  ? found.price
-                  : parseFloat(String(found.price).replace(/[^0-9.]/g, "")) || 0;
-              const defaultSize = (found.sizes && found.sizes[0]) || "Size 0";
-              const newItem: CartItemType = {
-                id: found.id || Number(urlItemId),
-                img: found.img || found.image_url || "/assets/best-selling.png",
-                name: found.name || "Sacred Item",
-                size: urlSize || defaultSize,
-                price: foundPrice,
-                quantity: 1,
-              };
-              setItems([newItem]);
-            }
-          } catch (e) {
-            console.error(e);
+    if (urlItemId && !directAddedRef.current) {
+      directAddedRef.current = true;
+      getProductById(Number(urlItemId))
+        .then((found) => {
+          if (found) {
+            const foundPrice =
+              typeof found.price === "number"
+                ? found.price
+                : parseFloat(String(found.price).replace(/[^0-9.]/g, "")) || 0;
+            const defaultSize = (found.sizes && found.sizes[0]) || "Size 0";
+            addToCart({
+              product_id: found.id || Number(urlItemId),
+              variant: urlSize || defaultSize,
+              price: foundPrice,
+              quantity: 1,
+              name: found.name,
+              img: found.img || found.image_url,
+              product: found,
+            });
+            // Clean up the URL parameter without page reload
+            router.replace("/cart");
           }
-        } else {
-          if (isMounted) {
-            setItems([]);
-          }
-        }
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
+        })
+        .catch((e) => console.error("Error adding direct preview item to cart:", e));
     }
+  }, [searchParams, addToCart, router]);
 
-    initializeCart();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [isAuthenticated, token, fetchCart, searchParams]);
-
-  const updateQuantity = async (id: number, delta: number) => {
-    const targetItem = items.find((i) => i.id === id);
-    if (!targetItem) return;
-
-    const newQty = Math.max(1, targetItem.quantity + delta);
-
-    setItems((prev) =>
-      prev.map((item) => {
-        if (item.id === id) {
-          return { ...item, quantity: newQty };
-        }
-        return item;
-      })
-    );
-
-    if (token) {
-      try {
-        await updateCartItemApi(
-          id,
-          {
-            quantity: newQty,
-            variant: targetItem.size,
-            price: targetItem.price,
-          },
-          token
-        );
-      } catch (err) {
-        console.error("Failed to sync updated quantity with API:", err);
-      }
-    }
-  };
-
-  const removeItem = async (id: number) => {
-    setItems((prev) => prev.filter((item) => item.id !== id));
-
-    if (token) {
-      try {
-        await deleteCartItemApi(id, token);
-      } catch (err) {
-        console.error("Failed to delete cart item from API:", err);
-      }
-    }
-  };
-
-  const subtotal = useMemo(() => {
-    return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  }, [items]);
-
-  // 1. Loading State with Spinner
+  // 1. Loading State with Logo Loader
   if (isLoading) {
     return (
-      <div className="py-24 flex flex-col items-center justify-center rounded-lg border border-[#fff0ad] bg-white shadow-xs">
-        <div className="h-10 w-10 animate-spin rounded-full border-3 border-[#fff0ad] border-t-[#d20b4f] mb-3" />
-        <p className="text-sm font-bold text-[#d20b4f]">
-          Loading your devotional basket...
-        </p>
+      <div className="py-16 flex flex-col items-center justify-center rounded-lg border border-[#fff0ad] bg-white shadow-xs">
+        <Loading
+          variant="container"
+          size="md"
+          message="Loading your devotional basket..."
+        />
       </div>
     );
   }
@@ -212,10 +100,10 @@ export default function CartTable() {
           <tbody className="divide-y divide-[#fff0ad] text-xs sm:text-sm text-black">
             {items.map((item) => (
               <CartItemRow
-                key={`${item.id}-${item.size || ""}`}
+                key={`${item.id}-${item.variant || item.size || ""}`}
                 item={item}
                 onUpdateQuantity={updateQuantity}
-                onRemove={removeItem}
+                onRemove={removeFromCart}
               />
             ))}
           </tbody>

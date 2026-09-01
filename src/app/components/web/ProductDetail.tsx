@@ -5,6 +5,7 @@ import Link from "next/link";
 import { getProductById, ProductItem } from "@/app/services/productService";
 import AddToCartButton from "@/app/components/web/AddToCartButton";
 import Spinner from "@/app/components/web/Spinner";
+import Loading from "@/app/components/common/Loading";
 
 interface ProductDetailProps {
   productId?: number | string;
@@ -49,8 +50,12 @@ export default function ProductDetail({ productId, initialSize }: ProductDetailP
 
   if (isLoading || !product) {
     return (
-      <div className="w-full lg:w-3/4 flex justify-center items-center py-24 bg-white rounded border border-[#fff0ad]">
-        <Spinner />
+      <div className="w-full lg:w-3/4 flex justify-center items-center py-16 bg-white rounded border border-[#fff0ad]">
+        <Loading
+          variant="container"
+          size="md"
+          message="Loading sacred item details..."
+        />
       </div>
     );
   }

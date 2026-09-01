@@ -1,151 +1,36 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { useWebAuth } from "@/app/context/WebAuthContext";
-import { getMyCartApi, CartItem } from "@/app/services/cartService";
-import { getProductById } from "@/app/services/productService";
-
-interface OrderSummaryItem {
-  id: number;
-  img: string;
-  name: string;
-  variant?: string;
-  price: number;
-  qty: number;
-  total: number;
-}
+import { useCart } from "@/app/context/CartContext";
+import Loading from "@/app/components/common/Loading";
 
 export default function CheckoutOrderSummary() {
-  const { token, isAuthenticated } = useWebAuth();
-  const searchParams = useSearchParams();
-  const [items, setItems] = useState<OrderSummaryItem[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const { items, isLoading, subtotal, clearCart } = useCart();
   const [isPlacingOrder, setIsPlacingOrder] = useState<boolean>(false);
 
-  const fetchOrderItems = useCallback(async () => {
-    if (!token) {
-      setIsLoading(false);
-      return;
-    }
-    setIsLoading(true);
-    try {
-      const response = await getMyCartApi(token);
-      const cartList: CartItem[] =
-        response.items || response.carts || (Array.isArray(response) ? response : []);
-
-      if (cartList && cartList.length > 0) {
-        const mapped: OrderSummaryItem[] = await Promise.all(
-          cartList.map(async (c: CartItem) => {
-            const localProd = c.product_id ? await getProductById(c.product_id) : null;
-            const price =
-              Number(c.price) ||
-              (localProd
-                ? typeof localProd.price === "number"
-                  ? localProd.price
-                  : parseFloat(String(localProd.price).replace(/[^0-9.]/g, "")) || 0
-                : 0);
-            const qty = c.quantity || 1;
-            const variant = c.variant ? ` (${c.variant})` : "";
-
-            return {
-              id: Number(c.id || c.product_id || Math.random()),
-              img:
-                (c.product?.image_url as string) ||
-                localProd?.img ||
-                localProd?.image_url ||
-                "/assets/best-selling.png",
-              name: `${(c.product?.name as string) || localProd?.name || "Devotional Item"}${variant}`,
-              variant: c.variant,
-              price,
-              qty,
-              total: price * qty,
-            };
-          })
-        );
-        setItems(mapped);
-      } else {
-        setItems([]);
-      }
-    } catch (err) {
-      console.warn("Could not fetch checkout order items:", err);
-      setItems([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [token]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadItems() {
-      if (isAuthenticated && token) {
-        await fetchOrderItems();
-      } else {
-        const urlItemId = searchParams.get("item");
-        const urlSize = searchParams.get("size");
-        if (urlItemId) {
-          try {
-            const found = await getProductById(Number(urlItemId));
-            if (found && isMounted) {
-              const price =
-                typeof found.price === "number"
-                  ? found.price
-                  : parseFloat(String(found.price).replace(/[^0-9.]/g, "")) || 0;
-              const variant = urlSize ? ` (${urlSize})` : "";
-              const directItem: OrderSummaryItem = {
-                id: found.id || Number(urlItemId),
-                img: found.img || found.image_url || "/assets/best-selling.png",
-                name: `${found.name || "Devotional Item"}${variant}`,
-                variant: urlSize || undefined,
-                price,
-                qty: 1,
-                total: price,
-              };
-              setItems([directItem]);
-            }
-          } catch (e) {
-            console.error(e);
-          }
-        } else {
-          if (isMounted) {
-            setItems([]);
-          }
-        }
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    }
-
-    loadItems();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [isAuthenticated, token, fetchOrderItems, searchParams]);
-
-  const subtotal = useMemo(() => {
-    return items.reduce((sum, item) => sum + item.total, 0);
-  }, [items]);
-
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     setIsPlacingOrder(true);
-    setTimeout(() => {
+    try {
+      // Clear cart items from localStorage & backend on order placement
+      await clearCart();
       alert("Blessings! Your sacred order has been submitted successfully for divine packing and dispatch.");
+    } catch (err) {
+      console.error("Failed to clear cart upon placing order:", err);
+    } finally {
       setIsPlacingOrder(false);
-    }, 1200);
+    }
   };
 
-  // 1. Loading State with Spinner
+  // 1. Loading State with Logo Loader
   if (isLoading) {
     return (
-      <div className="w-full lg:w-5/12 rounded border border-[#fff0ad] bg-[#fff0ad] p-8 flex flex-col items-center justify-center text-center shadow-xs">
-        <div className="h-10 w-10 animate-spin rounded-full border-3 border-white border-t-[#d20b4f] mb-3" />
-        <p className="text-xs font-bold text-[#d20b4f]">
-          Loading your sacred order summary...
-        </p>
+      <div className="w-full lg:w-5/12 rounded border border-[#fff0ad] bg-[#fff0ad]/40 p-6 flex flex-col items-center justify-center text-center shadow-xs">
+        <Loading
+          variant="container"
+          size="md"
+          message="Loading your sacred order summary..."
+        />
       </div>
     );
   }
@@ -183,7 +68,7 @@ export default function CheckoutOrderSummary() {
       {/* Items list */}
       <div className="space-y-3 divide-y divide-[#d20b4f]/10 max-h-72 overflow-y-auto pr-1">
         {items.map((item, i) => (
-          <div key={i} className="flex items-center justify-between pt-2">
+          <div key={`${item.id}-${item.variant || item.size || i}`} className="flex items-center justify-between pt-2">
             <div className="flex items-center gap-2.5">
               <div className="h-11 w-11 rounded bg-white p-1 flex items-center justify-center flex-shrink-0 border border-[#fff0ad]">
                 <img
@@ -195,14 +80,19 @@ export default function CheckoutOrderSummary() {
               <div>
                 <h6 className="heading-font text-xs font-bold text-black mb-0.5" title={item.name}>
                   {item.name}
+                  {(item.variant || item.size) && (
+                    <span className="text-[10px] text-[#d20b4f] ml-1">
+                      ({item.variant || item.size})
+                    </span>
+                  )}
                 </h6>
                 <span className="text-[10px] text-gray-700 font-semibold">
-                  Qty: {item.qty} &bull; ₹{item.price.toFixed(2)} each
+                  Qty: {item.quantity} &bull; ₹{item.price.toFixed(2)} each
                 </span>
               </div>
             </div>
             <span className="text-xs font-bold text-[#d20b4f] whitespace-nowrap ml-2">
-              ₹{item.total.toFixed(2)}
+              ₹{(item.price * item.quantity).toFixed(2)}
             </span>
           </div>
         ))}

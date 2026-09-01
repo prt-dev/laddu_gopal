@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import ProductCard from "./ProductCard";
 import { getProducts, ProductItem } from "@/app/services/productService";
+import Loading from "@/app/components/common/Loading";
 
 export default function KundanCollection() {
   const [kundanProducts, setKundanProducts] = useState<ProductItem[]>([]);
@@ -52,13 +53,12 @@ export default function KundanCollection() {
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 2xl:grid-cols-4 gap-3">
-          {[1, 2, 3, 4].map((n) => (
-            <div
-              key={n}
-              className="h-64 rounded-lg border border-[#fff0ad] bg-[#fff0ad]/20 animate-pulse"
-            />
-          ))}
+        <div className="py-8 flex justify-center items-center">
+          <Loading
+            variant="container"
+            size="md"
+            message="Loading Kundan Shringar Collection..."
+          />
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 2xl:grid-cols-4 gap-3">

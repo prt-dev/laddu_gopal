@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { siteConfig } from "../../config/site";
 import { useWebAuth } from "@/app/context/WebAuthContext";
+import { useCart } from "@/app/context/CartContext";
 import { getProducts, ProductItem } from "@/app/services/productService";
 import { getCategories, CategoryItem } from "@/app/services/categoryService";
 
@@ -12,6 +13,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isAuthenticated, logout } = useWebAuth();
+  const { cartCount } = useCart();
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -78,15 +80,15 @@ export default function Navbar() {
   // Instant live search results as devotee types
   const liveResults = searchQuery.trim()
     ? productsList
-        .filter((p) => {
-          const q = searchQuery.toLowerCase().trim();
-          return (
-            (p.name || "").toLowerCase().includes(q) ||
-            (p.category || "").toLowerCase().includes(q) ||
-            (p.desc || p.description || "").toLowerCase().includes(q)
-          );
-        })
-        .slice(0, 4)
+      .filter((p) => {
+        const q = searchQuery.toLowerCase().trim();
+        return (
+          (p.name || "").toLowerCase().includes(q) ||
+          (p.category || "").toLowerCase().includes(q) ||
+          (p.desc || p.description || "").toLowerCase().includes(q)
+        );
+      })
+      .slice(0, 4)
     : [];
 
   const quickCategories =
@@ -111,36 +113,32 @@ export default function Navbar() {
           <nav className="hidden md:flex items-center gap-8 text-sm font-bold text-[#d20b4f]">
             <Link
               href="/"
-              className={`transition hover:text-black no-underline ${
-                pathname === "/" ? "text-black" : ""
-              }`}
+              className={`transition hover:text-black no-underline ${pathname === "/" ? "text-black" : ""
+                }`}
             >
               Home
             </Link>
 
             <Link
               href="/shop"
-              className={`transition hover:text-black no-underline ${
-                pathname === "/shop" ? "text-black" : ""
-              }`}
+              className={`transition hover:text-black no-underline ${pathname === "/shop" ? "text-black" : ""
+                }`}
             >
               Category
             </Link>
 
             <Link
               href="/blog-preview"
-              className={`transition hover:text-black no-underline ${
-                pathname === "/blog-preview" ? "text-black" : ""
-              }`}
+              className={`transition hover:text-black no-underline ${pathname === "/blog-preview" ? "text-black" : ""
+                }`}
             >
               Blogs
             </Link>
 
             <Link
               href="/contact"
-              className={`transition hover:text-black no-underline ${
-                pathname === "/contact" ? "text-black" : ""
-              }`}
+              className={`transition hover:text-black no-underline ${pathname === "/contact" ? "text-black" : ""
+                }`}
             >
               Contact
             </Link>
@@ -168,9 +166,11 @@ export default function Navbar() {
               title="Cart"
             >
               <i className="fas fa-shopping-bag text-xs"></i>
-              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#d20b4f] text-[10px] font-bold text-white">
-                3
-              </span>
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#d20b4f] text-[10px] font-bold text-white">
+                  {cartCount > 99 ? "99+" : cartCount}
+                </span>
+              )}
             </Link>
 
             {/* Auth / Account */}
@@ -230,7 +230,7 @@ export default function Navbar() {
             ) : (
               <Link
                 href="/login"
-                className="rounded bg-[#d20b4f] px-4 py-1 text-xs font-bold text-white transition hover:bg-[#b80943] no-underline shadow-xs"
+                className="hidden rounded bg-[#d20b4f] px-4 py-1 text-xs font-bold text-white transition hover:bg-[#b80943] no-underline shadow-xs"
               >
                 Log In
               </Link>

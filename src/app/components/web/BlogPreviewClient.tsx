@@ -8,6 +8,7 @@ import BlogSidebar from "@/app/components/web/BlogSidebar";
 import RelatedBlogs from "@/app/components/web/RelatedBlogs";
 import { BlogItem, getBlogBySlug, getBlogById, getBlogs } from "@/app/services/blogService";
 import { ClientItem, getClientById } from "@/app/services/clientService";
+import Loading from "@/app/components/common/Loading";
 
 const sampleBlog: BlogItem = {
   id: 1,
@@ -140,19 +141,11 @@ export default function BlogPreviewClient() {
   return (
     <Suspense
       fallback={
-        <div className="container py-12 flex flex-col items-center justify-center text-center">
-          <div className="relative flex items-center justify-center mb-3">
-            <div className="absolute -inset-3 rounded-full bg-[#fff0ad]/60 animate-pulse blur-md" />
-            <img
-              src="/assets/logo.png"
-              alt="Loading..."
-              className="relative w-24 h-auto object-contain animate-pulse"
-            />
-          </div>
-          <p className="text-xs font-bold tracking-wider text-[#d20b4f] uppercase animate-pulse">
-            Loading blog preview...
-          </p>
-        </div>
+        <Loading
+          variant="container"
+          size="md"
+          message="Loading blog preview..."
+        />
       }
     >
       <BlogPreviewContent />
