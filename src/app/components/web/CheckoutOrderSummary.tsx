@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useCart } from "@/app/context/CartContext";
 import { useWebAuth } from "@/app/context/WebAuthContext";
@@ -15,10 +15,74 @@ export default function CheckoutOrderSummary() {
   const { items, isLoading, subtotal, clearCart } = useCart();
   const { token, user } = useWebAuth();
   const [isPlacingOrder, setIsPlacingOrder] = useState<boolean>(false);
+  const [isFormSaved, setIsFormSaved] = useState<boolean>(false);
   const [billingError, setBillingError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const checkSavedStatus = async () => {
+      if (typeof window === "undefined") return;
+
+      const savedFlag = localStorage.getItem("devotee_billing_saved_status");
+      if (savedFlag === "true") {
+        if (isMounted) setIsFormSaved(true);
+        return;
+      }
+
+      let phone = user?.phone || "";
+      let email = user?.email || "";
+      try {
+        const raw = localStorage.getItem(DEVOTEE_BILLING_STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          phone = parsed.phone || phone;
+          email = parsed.email || email;
+        }
+      } catch { }
+
+      if (phone || email) {
+        try {
+          const fetched = await fetchUserDetailsByPhoneOrEmail({ phone, email }, token || null);
+          if (fetched && isMounted) {
+            setIsFormSaved(true);
+            try {
+              localStorage.setItem("devotee_billing_saved_status", "true");
+            } catch { }
+            return;
+          }
+        } catch { }
+      }
+
+      if (isMounted) setIsFormSaved(false);
+    };
+
+    checkSavedStatus();
+
+    const handleSavedEvent = (e: any) => {
+      if (isMounted) {
+        setIsFormSaved(Boolean(e.detail?.isSaved));
+      }
+    };
+
+    window.addEventListener("devotee_billing_saved", handleSavedEvent);
+    return () => {
+      isMounted = false;
+      window.removeEventListener("devotee_billing_saved", handleSavedEvent);
+    };
+  }, [token, user]);
 
   const handlePlaceOrder = async () => {
     setBillingError(null);
+    if (!isFormSaved) {
+      const errorMsg = "Please click 'Save Address' in the delivery form to save your details before placing the order.";
+      setBillingError(errorMsg);
+      const saveBtn = document.getElementById("save-address-btn");
+      saveBtn?.scrollIntoView({ behavior: "smooth", block: "center" });
+      saveBtn?.focus();
+      return;
+    }
+
     setIsPlacingOrder(true);
 
     try {
@@ -81,6 +145,27 @@ export default function CheckoutOrderSummary() {
         { phone, email },
         token || null
       );
+
+      if (!fetchedUser) {
+        setIsFormSaved(false);
+        try {
+          localStorage.setItem("devotee_billing_saved_status", "false");
+        } catch { }
+        const errorMsg =
+          "Please click 'Save Address' in the delivery form to save your details before placing the order.";
+        setBillingError(errorMsg);
+        const saveBtn = document.getElementById("save-address-btn");
+        if (saveBtn) {
+          saveBtn.scrollIntoView({ behavior: "smooth", block: "center" });
+          saveBtn.focus();
+        } else {
+          const phoneEl = document.querySelector('input[name="phone"]') as HTMLInputElement | null;
+          phoneEl?.scrollIntoView({ behavior: "smooth", block: "center" });
+          phoneEl?.focus();
+        }
+        setIsPlacingOrder(false);
+        return;
+      }
 
       // Resolve address, email, and phone across live form, fetched user details, and additional_details
       const resolvedAddress = (
@@ -308,15 +393,25 @@ export default function CheckoutOrderSummary() {
       )}
 
       {/* Place Order button */}
-      <div className="mt-4">
+      <div className="mt-4 space-y-2">
         <button
           type="button"
           onClick={handlePlaceOrder}
-          disabled={isPlacingOrder}
-          className="w-full rounded bg-[#d20b4f] py-2.5 text-center text-sm font-bold text-white transition hover:bg-[#b80943] border-0 cursor-pointer shadow-xs disabled:opacity-50"
+          disabled={isPlacingOrder || !isFormSaved}
+          className="w-full rounded bg-[#d20b4f] py-2.5 text-center text-sm font-bold text-white transition hover:bg-[#b80943] border-0 cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+          title={!isFormSaved ? "Please click 'Save Address' in the delivery form to enable ordering" : undefined}
         >
           {isPlacingOrder ? "Verifying & Placing Sacred Order..." : "Place Sacred Order"}
         </button>
+
+        {!isFormSaved && (
+          <p className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200/80 rounded px-2.5 py-1.5 font-medium flex items-center gap-1.5 shadow-2xs">
+            <span>ℹ️</span>
+            <span>
+              Click <strong>Save Address</strong> in the delivery form to enable order placement.
+            </span>
+          </p>
+        )}
       </div>
     </div>
   );

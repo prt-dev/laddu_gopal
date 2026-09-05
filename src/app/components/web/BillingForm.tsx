@@ -37,9 +37,9 @@ export default function BillingForm() {
   });
 
   const [hasSavedData, setHasSavedData] = useState<boolean>(false);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
   const [saveMessage, setSaveMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // Load from localStorage or prefill from authenticated devotee profile
   useEffect(() => {
     const savedData = localStorage.getItem(STORAGE_KEY);
 
@@ -91,13 +91,14 @@ export default function BillingForm() {
       };
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        localStorage.setItem("devotee_billing_saved_status", "false");
         window.dispatchEvent(new CustomEvent("devotee_billing_updated", { detail: updated }));
+        window.dispatchEvent(new CustomEvent("devotee_billing_saved", { detail: { isSaved: false } }));
       } catch { }
       return updated;
     });
   };
 
-  // Handle saving details via POST /api/v1/users/save API and localStorage
   const handleSaveDetails = useCallback(async (token?: string): Promise<boolean> => {
     if (!formData.firstName.trim() || formData.phone.length != 10 || !formData.email.trim() || !formData.address.trim()) {
       setSaveMessage({
@@ -105,10 +106,16 @@ export default function BillingForm() {
         text: "Please fill required fields before saving.",
       });
       setTimeout(() => setSaveMessage(null), 4000);
+      try {
+        localStorage.setItem("devotee_billing_saved_status", "false");
+        window.dispatchEvent(new CustomEvent("devotee_billing_saved", { detail: { isSaved: false } }));
+      } catch { }
       return false;
     }
 
-    // 1. Save to local storage for instant offline / client persistence
+    setIsSaving(true);
+    setSaveMessage(null);
+
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
       setHasSavedData(true);
@@ -135,23 +142,30 @@ export default function BillingForm() {
         token || null,
       );
 
-      // if (savedUser?.success) {
-
       setSaveMessage({
         type: "success",
         text: "Address details saved successfully to your devotee profile! 🪔",
       });
-      // }
       setTimeout(() => setSaveMessage(null), 4000);
+      try {
+        localStorage.setItem("devotee_billing_saved_status", "true");
+        window.dispatchEvent(new CustomEvent("devotee_billing_saved", { detail: { isSaved: true, user: savedUser } }));
+      } catch { }
       return true;
     } catch (err: any) {
-      console.warn("User Save API fallback to local storage:", err);
+      console.warn("User Save API error:", err);
       setSaveMessage({
-        type: "success",
-        text: "Address saved locally on this device. 🪔",
+        type: "error",
+        text: err?.message || "Could not save address to server. Please try again.",
       });
-      setTimeout(() => setSaveMessage(null), 4000);
-      return true;
+      setTimeout(() => setSaveMessage(null), 5000);
+      try {
+        localStorage.setItem("devotee_billing_saved_status", "false");
+        window.dispatchEvent(new CustomEvent("devotee_billing_saved", { detail: { isSaved: false } }));
+      } catch { }
+      return false;
+    } finally {
+      setIsSaving(false);
     }
   }, [formData]);
 
@@ -159,6 +173,8 @@ export default function BillingForm() {
   const handleClearSavedDetails = () => {
     try {
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.setItem("devotee_billing_saved_status", "false");
+      window.dispatchEvent(new CustomEvent("devotee_billing_saved", { detail: { isSaved: false } }));
       setHasSavedData(false);
       setFormData({
         firstName: "",
@@ -183,25 +199,6 @@ export default function BillingForm() {
 
   return (
     <div className="space-y-4 rounded-xl border border-gray-200 bg-white p-5 sm:p-6 shadow-xs">
-      {/* Top Banner if saved address is pre-filled */}
-      {hasSavedData && (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 rounded-lg bg-[#fff0ad]/40 border border-[#d20b4f]/20 px-3.5 py-2 text-xs text-gray-800">
-          <div className="flex items-center gap-1.5 font-bold text-[#d20b4f]">
-            <span>✓</span>
-            <span>
-              {isAuthenticated ? "Devotee profile address loaded" : "Saved delivery details loaded"}
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={handleClearSavedDetails}
-            className="text-[11px] font-bold text-gray-600 hover:text-[#d20b4f] underline cursor-pointer border-0 bg-transparent p-0"
-          >
-            Clear Form
-          </button>
-        </div>
-      )}
-
       {/* First Name + Last Name */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
@@ -350,12 +347,33 @@ export default function BillingForm() {
 
       {/* Save Details Action & Feedback */}
       <div className="pt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-t border-gray-100">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <SaveDetailsButton
+            id="save-address-btn"
             type="button"
+            loading={isSaving}
             onClick={() => handleSaveDetails(token || undefined)}
             label="Save Address"
           />
+
+          {hasSavedData && (
+            <div className="flex items-center gap-2 rounded-lg bg-[#fff0ad]/40 border border-[#d20b4f]/20 px-3 py-1.5 text-xs text-gray-800">
+              <span className="font-bold text-[#d20b4f] flex items-center gap-1">
+                <span>✓</span>
+                <span>
+                  {isAuthenticated ? "Devotee profile address loaded" : "Saved delivery details loaded"}
+                </span>
+              </span>
+              <span className="text-gray-400">|</span>
+              <button
+                type="button"
+                onClick={handleClearSavedDetails}
+                className="text-[11px] font-bold text-gray-600 hover:text-[#d20b4f] underline cursor-pointer border-0 bg-transparent p-0"
+              >
+                Clear Form
+              </button>
+            </div>
+          )}
         </div>
 
         {saveMessage && (
