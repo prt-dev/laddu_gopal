@@ -5,248 +5,248 @@ import Link from "next/link";
 import { useCart } from "@/app/context/CartContext";
 import { useWebAuth } from "@/app/context/WebAuthContext";
 import {
-  fetchUserDetailsByPhoneOrEmail,
-  saveUserApi,
-  DEVOTEE_BILLING_STORAGE_KEY,
-} from "@/app/services/userService";
+  useCheckout,
+  DEVOTEE_BILLING_SAVED_STATUS_KEY,
+} from "@/app/context/CheckoutContext";
+import { createOrderApi, OrderItem } from "@/app/services/orderService";
+import {
+  createPaymentApi,
+  verifyRazorpayPaymentApi,
+} from "@/app/services/paymentService";
 import Loading from "@/app/components/common/Loading";
+
+const loadRazorpayScript = (): Promise<boolean> => {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined") return resolve(false);
+    if ((window as any).Razorpay) return resolve(true);
+
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
 
 export default function CheckoutOrderSummary() {
   const { items, isLoading, subtotal, clearCart } = useCart();
-  const { token, user } = useWebAuth();
+  const { token } = useWebAuth();
+  const {
+    isFormSaved,
+    setIsFormSaved,
+    formData,
+    fetchedUser,
+    fetchDevoteeUser,
+    resolvedAddress,
+    resolvedPhone,
+    resolvedEmail,
+    devoteeName,
+    missingDetails,
+    focusFirstMissingField,
+    focusSaveButton,
+  } = useCheckout();
+
   const [isPlacingOrder, setIsPlacingOrder] = useState<boolean>(false);
-  const [isFormSaved, setIsFormSaved] = useState<boolean>(false);
   const [billingError, setBillingError] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<"upi" | "card" | "cod">("upi");
+  const [completedOrder, setCompletedOrder] = useState<OrderItem | null>(null);
 
   useEffect(() => {
-    let isMounted = true;
-
-    const checkSavedStatus = async () => {
-      if (typeof window === "undefined") return;
-
-      const savedFlag = localStorage.getItem("devotee_billing_saved_status");
-      if (savedFlag === "true") {
-        if (isMounted) setIsFormSaved(true);
-        return;
-      }
-
-      let phone = user?.phone || "";
-      let email = user?.email || "";
-      try {
-        const raw = localStorage.getItem(DEVOTEE_BILLING_STORAGE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          phone = parsed.phone || phone;
-          email = parsed.email || email;
-        }
-      } catch { }
-
-      if (phone || email) {
-        try {
-          const fetched = await fetchUserDetailsByPhoneOrEmail({ phone, email }, token || null);
-          if (fetched && isMounted) {
-            setIsFormSaved(true);
-            try {
-              localStorage.setItem("devotee_billing_saved_status", "true");
-            } catch { }
-            return;
-          }
-        } catch { }
-      }
-
-      if (isMounted) setIsFormSaved(false);
-    };
-
-    checkSavedStatus();
-
-    const handleSavedEvent = (e: any) => {
-      if (isMounted) {
-        setIsFormSaved(Boolean(e.detail?.isSaved));
-      }
-    };
-
-    window.addEventListener("devotee_billing_saved", handleSavedEvent);
-    return () => {
-      isMounted = false;
-      window.removeEventListener("devotee_billing_saved", handleSavedEvent);
-    };
-  }, [token, user]);
+    if (!billingError) return;
+    const timer = setTimeout(() => {
+      setBillingError(null);
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [billingError]);
 
   const handlePlaceOrder = async () => {
     setBillingError(null);
     if (!isFormSaved) {
       const errorMsg = "Please click 'Save Address' in the delivery form to save your details before placing the order.";
       setBillingError(errorMsg);
-      const saveBtn = document.getElementById("save-address-btn");
-      saveBtn?.scrollIntoView({ behavior: "smooth", block: "center" });
-      saveBtn?.focus();
+      focusSaveButton();
       return;
     }
 
     setIsPlacingOrder(true);
 
     try {
-      // 1. Gather current billing details from localStorage, live DOM inputs, and user auth
-      let currentBilling: Record<string, string> = {};
+      const phone = (resolvedPhone || formData.phone || "").trim();
+      const email = (resolvedEmail || formData.email || "").trim();
 
-      if (typeof window !== "undefined") {
-        try {
-          const raw = localStorage.getItem(DEVOTEE_BILLING_STORAGE_KEY);
-          if (raw) currentBilling = JSON.parse(raw);
-        } catch (e) {
-          console.warn("Failed to parse billing details from storage:", e);
-        }
-
-        // Check live input values in the DOM for real-time form state
-        const phoneInput = document.querySelector('input[name="phone"]') as HTMLInputElement | null;
-        const emailInput = document.querySelector('input[name="email"]') as HTMLInputElement | null;
-        const addressInput = document.querySelector('input[name="address"]') as HTMLInputElement | null;
-        const firstNameInput = document.querySelector('input[name="firstName"]') as HTMLInputElement | null;
-        const lastNameInput = document.querySelector('input[name="lastName"]') as HTMLInputElement | null;
-        const cityInput = document.querySelector('input[name="city"]') as HTMLInputElement | null;
-        const stateInput = document.querySelector('input[name="state"]') as HTMLInputElement | null;
-        const pincodeInput = document.querySelector('input[name="pincode"]') as HTMLInputElement | null;
-        const notesInput = document.querySelector('textarea[name="notes"]') as HTMLTextAreaElement | null;
-
-        if (phoneInput?.value) currentBilling.phone = phoneInput.value.trim();
-        if (emailInput?.value) currentBilling.email = emailInput.value.trim();
-        if (addressInput?.value) currentBilling.address = addressInput.value.trim();
-        if (firstNameInput?.value) currentBilling.firstName = firstNameInput.value.trim();
-        if (lastNameInput?.value) currentBilling.lastName = lastNameInput.value.trim();
-        if (cityInput?.value) currentBilling.city = cityInput.value.trim();
-        if (stateInput?.value) currentBilling.state = stateInput.value.trim();
-        if (pincodeInput?.value) currentBilling.pincode = pincodeInput.value.trim();
-        if (notesInput?.value) currentBilling.notes = notesInput.value.trim();
-      }
-
-      // Check if user is logged in
-      if (user) {
-        if (!currentBilling.email && user.email) currentBilling.email = user.email;
-        if (!currentBilling.phone && user.phone) currentBilling.phone = user.phone;
-        if (!currentBilling.address && user.address) currentBilling.address = user.address;
-      }
-
-      const phone = (currentBilling.phone || "").trim();
-      const email = (currentBilling.email || "").trim();
-
-      // Ensure at least phone or email is supplied before calling fetch user details
       if (!phone && !email) {
         const msg = "Please enter your Mobile Number and Email Address in the delivery address form.";
         setBillingError(msg);
-        const phoneEl = document.querySelector('input[name="phone"]') as HTMLInputElement | null;
-        phoneEl?.scrollIntoView({ behavior: "smooth", block: "center" });
-        phoneEl?.focus();
+        focusFirstMissingField();
         setIsPlacingOrder(false);
         return;
       }
 
-      // 2. Fetch user details by phone or email from backend
-      const fetchedUser = await fetchUserDetailsByPhoneOrEmail(
-        { phone, email },
-        token || null
-      );
+      let activeUser = fetchedUser;
+      let isEndpointError = false;
+      if (!activeUser) {
+        try {
+          activeUser = await fetchDevoteeUser(phone, email);
+        } catch (err) {
+          console.warn("Could not reach /users/details endpoint:", err);
+          isEndpointError = true;
+        }
+      }
 
-      if (!fetchedUser) {
+      if (!activeUser || isEndpointError) {
         setIsFormSaved(false);
         try {
-          localStorage.setItem("devotee_billing_saved_status", "false");
+          localStorage.setItem(DEVOTEE_BILLING_SAVED_STATUS_KEY, "false");
         } catch { }
         const errorMsg =
           "Please click 'Save Address' in the delivery form to save your details before placing the order.";
         setBillingError(errorMsg);
-        const saveBtn = document.getElementById("save-address-btn");
-        if (saveBtn) {
-          saveBtn.scrollIntoView({ behavior: "smooth", block: "center" });
-          saveBtn.focus();
-        } else {
-          const phoneEl = document.querySelector('input[name="phone"]') as HTMLInputElement | null;
-          phoneEl?.scrollIntoView({ behavior: "smooth", block: "center" });
-          phoneEl?.focus();
-        }
+        focusSaveButton();
         setIsPlacingOrder(false);
         return;
       }
-
-      // Resolve address, email, and phone across live form, fetched user details, and additional_details
-      const resolvedAddress = (
-        currentBilling.address ||
-        fetchedUser?.address ||
-        (fetchedUser?.additional_details && typeof fetchedUser.additional_details === "object"
-          ? fetchedUser.additional_details.address
-          : "") ||
-        ""
-      ).trim();
-
-      const resolvedEmail = (
-        email ||
-        fetchedUser?.email ||
-        ""
-      ).trim();
-
-      const resolvedPhone = (
-        phone ||
-        fetchedUser?.phone ||
-        ""
-      ).trim();
-
-      // 3. Verify all essential billing details (email, phone, address) are present
-      const missingDetails: string[] = [];
-      if (!resolvedEmail) missingDetails.push("Email Address");
-      if (!resolvedPhone || resolvedPhone.length < 10) missingDetails.push("10-digit Mobile Number");
-      if (!resolvedAddress) missingDetails.push("Delivery Address");
 
       if (missingDetails.length > 0) {
         const errorMsg = `Please provide complete billing details before placing order: Missing ${missingDetails.join(", ")}.`;
         setBillingError(errorMsg);
+        focusFirstMissingField();
 
-        // Highlight and focus the first missing field
-        if (!resolvedPhone || resolvedPhone.length < 10) {
-          const el = document.querySelector('input[name="phone"]') as HTMLInputElement | null;
-          el?.scrollIntoView({ behavior: "smooth", block: "center" });
-          el?.focus();
-        } else if (!resolvedAddress) {
-          const el = document.querySelector('input[name="address"]') as HTMLInputElement | null;
-          el?.scrollIntoView({ behavior: "smooth", block: "center" });
-          el?.focus();
-        } else if (!resolvedEmail) {
-          const el = document.querySelector('input[name="email"]') as HTMLInputElement | null;
-          el?.scrollIntoView({ behavior: "smooth", block: "center" });
-          el?.focus();
+        if (!activeUser || isEndpointError) {
+          setIsPlacingOrder(false);
         }
+        return;
+      }
 
+      const totalOrderAmount = Number(subtotal.toFixed(2));
+
+      if (paymentMethod === "cod") {
+        const createdOrder = await createOrderApi(
+          {
+            amount: totalOrderAmount,
+            currency: "INR",
+            status: "pending",
+            phone: resolvedPhone,
+            email: resolvedEmail,
+            username: devoteeName,
+            user_id: activeUser?.id
+              ? Number(activeUser.id)
+              : fetchedUser?.id
+              ? Number(fetchedUser.id)
+              : undefined,
+          },
+          token || null
+        );
+
+        await clearCart();
+        setCompletedOrder(createdOrder);
         setIsPlacingOrder(false);
         return;
       }
 
-      // 4. Save/upsert user billing details to backend database via POST /api/v1/users/save
-      try {
-        await saveUserApi(
-          {
-            firstname: currentBilling.firstName || fetchedUser?.firstname || "",
-            lastname: currentBilling.lastName || fetchedUser?.lastname || "",
-            name: `${currentBilling.firstName || ""} ${currentBilling.lastName || ""}`.trim() || fetchedUser?.name || "",
-            phone: resolvedPhone,
-            email: resolvedEmail,
-            address: resolvedAddress,
-            city: currentBilling.city || fetchedUser?.city || "",
-            state: currentBilling.state || fetchedUser?.state || "",
-            pincode: currentBilling.pincode || fetchedUser?.pincode || "",
-            notes: currentBilling.notes || undefined,
-          },
-          token || null
-        );
-      } catch (saveErr) {
-        console.warn("Could not sync user details during checkout:", saveErr);
+      // 6. Online Payment (Razorpay UPI / Cards / Net Banking)
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        setBillingError("Could not load secure payment gateway. Please check your internet connection.");
+        setIsPlacingOrder(true);
+        return;
       }
 
-      // 5. Clear cart items from localStorage & backend on successful order placement
-      await clearCart();
-      alert("Blessings! Your sacred order has been submitted successfully for divine packing and dispatch.");
-    } catch (err) {
+      const createdOrder = await createOrderApi(
+        {
+          amount: totalOrderAmount,
+          currency: "INR",
+          status: "pending",
+          phone: resolvedPhone,
+          email: resolvedEmail,
+          username: devoteeName,
+          user_id: activeUser?.id
+            ? Number(activeUser.id)
+            : fetchedUser?.id
+            ? Number(fetchedUser.id)
+            : undefined,
+        },
+        token || null
+      );
+
+      const rzpKey =
+        process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_TY0c6RcNQTqpoI";
+
+      const options: any = {
+        key: rzpKey,
+        amount: Math.round(totalOrderAmount * 100), // in paise
+        currency: "INR",
+        name: "Makhan Chor - Laddu Gopal",
+        description: `Sacred Order #${createdOrder.order_number || createdOrder.id}`,
+        image: "/assets/best-selling.png",
+        prefill: {
+          name: devoteeName,
+          email: resolvedEmail,
+          contact: resolvedPhone,
+        },
+        notes: {
+          address: resolvedAddress,
+          order_id: String(createdOrder.id || ""),
+          order_number: createdOrder.order_number || "",
+        },
+        theme: {
+          color: "#d20b4f",
+        },
+        handler: async function (response: any) {
+          setIsPlacingOrder(true);
+          try {
+            if (response.razorpay_signature) {
+              await verifyRazorpayPaymentApi(
+                {
+                  order_id: createdOrder.id,
+                  razorpay_order_id: response.razorpay_order_id || createdOrder.razorpay_order_id || "",
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                },
+                token || null
+              );
+            } else {
+              await createPaymentApi(
+                {
+                  order_id: Number(createdOrder.id),
+                  amount: totalOrderAmount,
+                  currency: "INR",
+                  status: "captured",
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_order_id: response.razorpay_order_id || undefined,
+                },
+                token || null
+              );
+            }
+          } catch (payErr) {
+            console.warn("Payment verification backend sync:", payErr);
+          }
+
+          await clearCart();
+          setCompletedOrder({
+            ...createdOrder,
+            status: "paid",
+          });
+          setIsPlacingOrder(false);
+        },
+        modal: {
+          ondismiss: function () {
+            setIsPlacingOrder(false);
+          },
+        },
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.on("payment.failed", function (resp: any) {
+        console.error("Razorpay payment failed:", resp.error);
+        setBillingError(`Payment was declined: ${resp.error?.description || "Transaction failed"}`);
+        setIsPlacingOrder(false);
+      });
+      rzp.open();
+    } catch (err: any) {
       console.error("Failed to place sacred order:", err);
-      setBillingError("Could not place order at this time. Please try again.");
-    } finally {
-      setIsPlacingOrder(false);
+      setBillingError(err.message || "Could not place order at this time. Please try again.");
+      setIsPlacingOrder(true);
     }
   };
 
@@ -263,7 +263,70 @@ export default function CheckoutOrderSummary() {
     );
   }
 
-  // 2. Empty / Not Found State
+  // 2. Completed Order Sacred Confirmation
+  if (completedOrder) {
+    const isPaid = completedOrder.status === "paid";
+    return (
+      <div className="w-full lg:w-5/12 rounded-xl border-2 border-amber-300 bg-[#fffdf0] p-6 shadow-md text-center space-y-4">
+        <div className="h-16 w-16 mx-auto rounded-full bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-600 text-3xl">
+          ✓
+        </div>
+
+        <div>
+          <span className="inline-block px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wide bg-amber-200 text-amber-900 mb-2">
+            Jai Shri Krishna!
+          </span>
+          <h3 className="heading-font text-xl font-extrabold text-[#d20b4f]">
+            Sacred Order Placed Successfully
+          </h3>
+          <p className="text-xs text-gray-700 mt-1">
+            May Laddu Gopal bless your home with divine happiness, peace and abundance.
+          </p>
+        </div>
+
+        <div className="rounded-lg bg-white p-4 border border-amber-200 text-left space-y-2 text-xs">
+          <div className="flex justify-between border-b border-amber-100 pb-2">
+            <span className="text-gray-500 font-semibold">Order Number:</span>
+            <span className="font-mono font-bold text-[#d20b4f]">
+              {completedOrder.order_number || `#${completedOrder.id}`}
+            </span>
+          </div>
+          <div className="flex justify-between border-b border-amber-100 pb-2">
+            <span className="text-gray-500 font-semibold">Total Amount:</span>
+            <span className="font-bold text-black">
+              ₹{Number(completedOrder.amount || 0).toFixed(2)}
+            </span>
+          </div>
+          <div className="flex justify-between border-b border-amber-100 pb-2">
+            <span className="text-gray-500 font-semibold">Payment Status:</span>
+            <span
+              className={`font-bold px-2 py-0.5 rounded text-[11px] ${isPaid
+                ? "bg-green-100 text-green-800"
+                : "bg-amber-100 text-amber-800"
+                }`}
+            >
+              {isPaid ? "Paid Online (Captured)" : "Cash on Delivery (Pending)"}
+            </span>
+          </div>
+          <div className="flex justify-between pt-1">
+            <span className="text-gray-500 font-semibold">Delivery Seva:</span>
+            <span className="text-emerald-700 font-bold">Standard Free Seva</span>
+          </div>
+        </div>
+
+        <div className="pt-2">
+          <Link
+            href="/shop"
+            className="inline-block w-full rounded bg-[#d20b4f] py-3 text-xs font-bold text-white uppercase tracking-wider hover:bg-[#b80943] transition no-underline shadow-xs"
+          >
+            Continue Divine Shopping &rarr;
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. Empty / Not Found State
   if (items.length === 0) {
     return (
       <div className="w-full lg:w-5/12 rounded border border-[#fff0ad] bg-[#fff0ad]/30 p-8 flex flex-col items-center justify-center text-center shadow-xs">
@@ -286,7 +349,7 @@ export default function CheckoutOrderSummary() {
     );
   }
 
-  // 3. Active Order Summary
+  // 4. Active Order Summary
   return (
     <div className="w-full lg:w-5/12 rounded border border-[#fff0ad] bg-[#fff0ad] p-5 sm:p-6 shadow-xs">
       <h3 className="heading-font text-lg font-bold text-[#d20b4f] mb-4 border-b border-[#d20b4f]/20 pb-2">
@@ -368,16 +431,21 @@ export default function CheckoutOrderSummary() {
           { id: "upi", label: "Instant UPI (Google Pay, PhonePe, Paytm, QR)" },
           { id: "card", label: "Credit / Debit Card / Net Banking" },
           { id: "cod", label: "Cash on Delivery (COD)" },
-        ].map((m, idx) => (
+        ].map((m) => (
           <label
             key={m.id}
-            className="flex items-center gap-2 rounded bg-white p-2 text-xs font-bold text-black cursor-pointer border border-[#fff0ad] hover:border-[#d20b4f]/40 transition"
+            className={`flex items-center gap-2 rounded bg-white p-2.5 text-xs font-bold text-black cursor-pointer border transition ${paymentMethod === m.id
+              ? "border-[#d20b4f] ring-1 ring-[#d20b4f]/30 bg-pink-50/20"
+              : "border-[#fff0ad] hover:border-[#d20b4f]/40"
+              }`}
           >
             <input
               type="radio"
               name="payment"
-              defaultChecked={idx === 0}
-              className="text-[#d20b4f]"
+              value={m.id}
+              checked={paymentMethod === m.id}
+              onChange={() => setPaymentMethod(m.id as any)}
+              className="text-[#d20b4f] focus:ring-[#d20b4f]"
             />
             <span>{m.label}</span>
           </label>
@@ -398,10 +466,38 @@ export default function CheckoutOrderSummary() {
           type="button"
           onClick={handlePlaceOrder}
           disabled={isPlacingOrder || !isFormSaved}
-          className="w-full rounded bg-[#d20b4f] py-2.5 text-center text-sm font-bold text-white transition hover:bg-[#b80943] border-0 cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full rounded bg-[#d20b4f] py-2.5 text-center text-sm font-bold text-white transition hover:bg-[#b80943] border-0 cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           title={!isFormSaved ? "Please click 'Save Address' in the delivery form to enable ordering" : undefined}
         >
-          {isPlacingOrder ? "Verifying & Placing Sacred Order..." : "Place Sacred Order"}
+          {isPlacingOrder && (
+            <svg
+              className="animate-spin h-4 w-4 text-white"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+              />
+            </svg>
+          )}
+          {isPlacingOrder
+            ? paymentMethod === "cod"
+              ? "Placing Sacred Order..."
+              : "Connecting to Secure Gateway..."
+            : paymentMethod === "cod"
+              ? "Place Sacred Order (Cash on Delivery)"
+              : "Pay & Place Sacred Order"}
         </button>
 
         {!isFormSaved && (

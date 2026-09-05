@@ -1,200 +1,36 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React from "react";
 import SaveDetailsButton from "./SaveDetailsButton";
 import { useWebAuth } from "@/app/context/WebAuthContext";
-import { saveUserApi, UserSavePayload } from "@/app/services/userService";
+import {
+  useCheckout,
+  BillingFormData,
+  DEVOTEE_BILLING_STORAGE_KEY,
+} from "@/app/context/CheckoutContext";
 
-export interface BillingFormData {
-  firstName: string;
-  lastName: string;
-  address: string;
-  city: string;
-  state: string;
-  pincode: string;
-  phone: string;
-  email: string;
-  notes: string;
-}
-
-export const DEVOTEE_BILLING_STORAGE_KEY = "devotee_billing_details";
-const STORAGE_KEY = DEVOTEE_BILLING_STORAGE_KEY;
+export type { BillingFormData };
+export { DEVOTEE_BILLING_STORAGE_KEY };
 
 export default function BillingForm() {
-
-  const { isAuthenticated, token, user } = useWebAuth();
-
-  const [formData, setFormData] = useState<BillingFormData>({
-    firstName: "",
-    lastName: "",
-    address: "",
-    city: "",
-    state: "",
-    pincode: "",
-    phone: "",
-    email: "",
-    notes: "",
-  });
-
-  const [hasSavedData, setHasSavedData] = useState<boolean>(false);
-  const [isSaving, setIsSaving] = useState<boolean>(false);
-  const [saveMessage, setSaveMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-
-  useEffect(() => {
-    const savedData = localStorage.getItem(STORAGE_KEY);
-
-    if (savedData) {
-      try {
-        const parsedData: BillingFormData = JSON.parse(savedData);
-
-        setFormData((prev) => ({
-          ...prev,
-          ...parsedData,
-        }));
-        if (parsedData.address || parsedData.phone || parsedData.email) {
-          setHasSavedData(true);
-        }
-      } catch (error) {
-        console.error("Invalid billing form data:", error);
-      }
-    } else if (user) {
-
-      const prefill: BillingFormData = {
-        firstName: user.firstname || "",
-        lastName: user.lastname || "",
-        address: user.address || "",
-        city: "",
-        state: "",
-        pincode: "",
-        phone: user.phone || "",
-        email: user.email || "",
-        notes: "",
-      };
-      setFormData(prefill);
-      if (prefill.phone || prefill.email || prefill.address) {
-        setHasSavedData(true);
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(prefill));
-        } catch { }
-      }
-    }
-  }, [user]);
+  const { isAuthenticated, token } = useWebAuth();
+  const {
+    formData,
+    updateFormField,
+    hasSavedData,
+    isSaving,
+    saveMessage,
+    isDataSame,
+    isLoadingUser,
+    handleSaveDetails,
+    handleClearSavedDetails,
+  } = useCheckout();
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => {
-      const updated = {
-        ...prev,
-        [name]: value,
-      };
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-        localStorage.setItem("devotee_billing_saved_status", "false");
-        window.dispatchEvent(new CustomEvent("devotee_billing_updated", { detail: updated }));
-        window.dispatchEvent(new CustomEvent("devotee_billing_saved", { detail: { isSaved: false } }));
-      } catch { }
-      return updated;
-    });
-  };
-
-  const handleSaveDetails = useCallback(async (token?: string): Promise<boolean> => {
-    if (!formData.firstName.trim() || formData.phone.length != 10 || !formData.email.trim() || !formData.address.trim()) {
-      setSaveMessage({
-        type: "error",
-        text: "Please fill required fields before saving.",
-      });
-      setTimeout(() => setSaveMessage(null), 4000);
-      try {
-        localStorage.setItem("devotee_billing_saved_status", "false");
-        window.dispatchEvent(new CustomEvent("devotee_billing_saved", { detail: { isSaved: false } }));
-      } catch { }
-      return false;
-    }
-
-    setIsSaving(true);
-    setSaveMessage(null);
-
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
-      setHasSavedData(true);
-    } catch (e) {
-      console.warn("Could not save to localStorage:", e);
-    }
-
-    const payload: UserSavePayload = {
-      firstname: formData.firstName.trim(),
-      lastname: formData.lastName.trim(),
-      name: `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim(),
-      phone: formData.phone.trim(),
-      email: formData.email.trim(),
-      address: formData.address.trim(),
-      city: formData.city.trim(),
-      state: formData.state.trim(),
-      pincode: formData.pincode.trim(),
-      notes: formData.notes.trim() || undefined,
-    };
-
-    try {
-      const savedUser = await saveUserApi(
-        payload,
-        token || null,
-      );
-
-      setSaveMessage({
-        type: "success",
-        text: "Address details saved successfully to your devotee profile! 🪔",
-      });
-      setTimeout(() => setSaveMessage(null), 4000);
-      try {
-        localStorage.setItem("devotee_billing_saved_status", "true");
-        window.dispatchEvent(new CustomEvent("devotee_billing_saved", { detail: { isSaved: true, user: savedUser } }));
-      } catch { }
-      return true;
-    } catch (err: any) {
-      console.warn("User Save API error:", err);
-      setSaveMessage({
-        type: "error",
-        text: err?.message || "Could not save address to server. Please try again.",
-      });
-      setTimeout(() => setSaveMessage(null), 5000);
-      try {
-        localStorage.setItem("devotee_billing_saved_status", "false");
-        window.dispatchEvent(new CustomEvent("devotee_billing_saved", { detail: { isSaved: false } }));
-      } catch { }
-      return false;
-    } finally {
-      setIsSaving(false);
-    }
-  }, [formData]);
-
-  // Clear saved details
-  const handleClearSavedDetails = () => {
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-      localStorage.setItem("devotee_billing_saved_status", "false");
-      window.dispatchEvent(new CustomEvent("devotee_billing_saved", { detail: { isSaved: false } }));
-      setHasSavedData(false);
-      setFormData({
-        firstName: "",
-        lastName: "",
-        address: "",
-        city: "",
-        state: "",
-        pincode: "",
-        phone: "",
-        email: "",
-        notes: "",
-      });
-      setSaveMessage({
-        type: "success",
-        text: "Saved details cleared from form.",
-      });
-      setTimeout(() => setSaveMessage(null), 3000);
-    } catch (e) {
-      console.warn("Could not clear saved details:", e);
-    }
+    updateFormField(name, value);
   };
 
   return (
@@ -352,8 +188,10 @@ export default function BillingForm() {
             id="save-address-btn"
             type="button"
             loading={isSaving}
+            disabled={isDataSame || isSaving || isLoadingUser}
             onClick={() => handleSaveDetails(token || undefined)}
             label="Save Address"
+            title={isDataSame ? "Address details are already saved and match the backend devotee profile" : undefined}
           />
 
           {hasSavedData && (

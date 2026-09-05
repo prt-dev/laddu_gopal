@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import PageHeader from "../../components/web/PageHeader";
 import BillingForm from "../../components/web/BillingForm";
 import CheckoutOrderSummary from "../../components/web/CheckoutOrderSummary";
+import { CheckoutProvider } from "@/app/context/CheckoutContext";
 
 export const metadata: Metadata = {
   title: "Checkout & Dispatch | Makhan Chor - Laddu Gopal",
@@ -11,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function CheckoutPage() {
   return (
-    <>
+    <CheckoutProvider>
       <PageHeader
         title="Sacred Order Checkout"
         breadcrumbs={[
@@ -32,6 +33,6 @@ export default function CheckoutPage() {
           <CheckoutOrderSummary />
         </div>
       </div>
-    </>
+    </CheckoutProvider>
   );
 }

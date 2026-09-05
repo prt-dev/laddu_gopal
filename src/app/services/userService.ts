@@ -180,7 +180,6 @@ export async function fetchUserDetailsByPhoneOrEmail(
         headers["Authorization"] = `Bearer ${token}`;
     }
 
-    // 1. Attempt GET /users/details
     if (params.phone?.trim() || params.email?.trim()) {
         try {
             const url = `${BASE_URL}/users/details?${query.toString()}`;
