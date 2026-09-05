@@ -23,6 +23,7 @@ export interface ProductItem {
   oldPrice?: string;
   sizes?: string[];
   specs?: { label: string; value: string }[];
+  variant?: string;
 }
 
 export interface GetProductsParams {
@@ -85,7 +86,16 @@ export function normalizeProduct(p: any): ProductItem {
     category: categoryName,
     category_obj: typeof p.category === "object" ? p.category : undefined,
     oldPrice: `₹${Math.round(numPrice * 1.4)}.00`,
-    sizes: p.sizes || ["Size 0", "Size 1", "Size 2", "Size 3", "Size 4", "Size 5", "Size 6"],
+    variant: p.variant || "",
+    sizes:
+      p.variant !== undefined && p.variant !== null
+        ? String(p.variant)
+            .split(/[,;]/)
+            .map((s: string) => s.trim())
+            .filter(Boolean)
+        : Array.isArray(p.sizes) && p.sizes.length > 0
+        ? p.sizes
+        : ["Size 0", "Size 1", "Size 2", "Size 3", "Size 4", "Size 5", "Size 6"],
     specs: p.specs || [
       { label: "Craftsmanship", value: "100% Handcrafted by traditional Vrindavan Karigars" },
       { label: "Material", value: "Premium fabric with heavy embroidery & stone work" },

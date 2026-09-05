@@ -17,11 +17,12 @@ export interface BillingFormData {
   notes: string;
 }
 
-const STORAGE_KEY = "devotee_billing_details";
+export const DEVOTEE_BILLING_STORAGE_KEY = "devotee_billing_details";
+const STORAGE_KEY = DEVOTEE_BILLING_STORAGE_KEY;
 
 export default function BillingForm() {
 
-  const { isAuthenticated, token } = useWebAuth();
+  const { isAuthenticated, token, user } = useWebAuth();
 
   const [formData, setFormData] = useState<BillingFormData>({
     firstName: "",
@@ -38,7 +39,7 @@ export default function BillingForm() {
   const [hasSavedData, setHasSavedData] = useState<boolean>(false);
   const [saveMessage, setSaveMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // Load from localStorage
+  // Load from localStorage or prefill from authenticated devotee profile
   useEffect(() => {
     const savedData = localStorage.getItem(STORAGE_KEY);
 
@@ -50,20 +51,50 @@ export default function BillingForm() {
           ...prev,
           ...parsedData,
         }));
+        if (parsedData.address || parsedData.phone || parsedData.email) {
+          setHasSavedData(true);
+        }
       } catch (error) {
         console.error("Invalid billing form data:", error);
       }
+    } else if (user) {
+
+      const prefill: BillingFormData = {
+        firstName: user.firstname || "",
+        lastName: user.lastname || "",
+        address: user.address || "",
+        city: "",
+        state: "",
+        pincode: "",
+        phone: user.phone || "",
+        email: user.email || "",
+        notes: "",
+      };
+      setFormData(prefill);
+      if (prefill.phone || prefill.email || prefill.address) {
+        setHasSavedData(true);
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(prefill));
+        } catch { }
+      }
     }
-  }, []);
+  }, [user]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => {
+      const updated = {
+        ...prev,
+        [name]: value,
+      };
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        window.dispatchEvent(new CustomEvent("devotee_billing_updated", { detail: updated }));
+      } catch { }
+      return updated;
+    });
   };
 
   // Handle saving details via POST /api/v1/users/save API and localStorage

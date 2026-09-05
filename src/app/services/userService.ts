@@ -141,3 +141,74 @@ export async function saveUserApi(
     return response.json();
 }
 
+export const DEVOTEE_BILLING_STORAGE_KEY = "devotee_billing_details";
+
+export interface FetchedUserDetails {
+    id?: number | string;
+    name?: string;
+    firstname?: string;
+    lastname?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    pincode?: string;
+    notes?: string;
+    additional_details?: any;
+    [key: string]: unknown;
+}
+
+/**
+ * Fetch devotee / user billing details by phone or email.
+ * References backend routes:
+ * 1. Checks GET /api/v1/users/details?phone=...&email=...
+ * 2. Fallback to GET /api/v1/users/profile if authenticated with token
+ */
+export async function fetchUserDetailsByPhoneOrEmail(
+    params: { phone?: string; email?: string },
+    token?: string | null
+): Promise<FetchedUserDetails | null> {
+    const query = new URLSearchParams();
+    if (params.phone?.trim()) query.append("phone", params.phone.trim());
+    if (params.email?.trim()) query.append("email", params.email.trim());
+
+    const headers: Record<string, string> = {
+        "Accept": "application/json",
+    };
+    if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    // 1. Attempt GET /users/details
+    if (params.phone?.trim() || params.email?.trim()) {
+        try {
+            const url = `${BASE_URL}/users/details?${query.toString()}`;
+            const response = await fetch(url, {
+                method: "GET",
+                headers,
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                return data;
+            }
+        } catch (err) {
+            console.warn("Could not reach /users/details endpoint:", err);
+        }
+    }
+
+    // 2. Fallback to /users/profile if token is available
+    if (token) {
+        try {
+            const profile = await getUserProfileApi(token);
+            if (profile) return profile;
+        } catch (err) {
+            console.warn("Could not fetch user profile fallback:", err);
+        }
+    }
+
+    return null;
+}
+
+

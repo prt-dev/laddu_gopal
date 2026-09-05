@@ -13,6 +13,8 @@ export type Role = "admin" | "superadmin" | "user" | "manager" | "customer";
 export interface User {
   id?: string | number;
   name?: string;
+  firstname?: string;
+  lastname?: string;
   email: string;
   username?: string | number;
   password?: string;
