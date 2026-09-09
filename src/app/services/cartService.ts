@@ -324,14 +324,14 @@ export async function createOrUpdateCartApi(
     [key: string]: any;
   },
   token?: string | null
-): Promise<CartItem> {
+): Promise<CartItem | null> {
   const targetCartId = data.cart_id || data.id;
 
   if (targetCartId && !isNaN(Number(targetCartId)) && Number(targetCartId) < 100000000000) {
     try {
       return await updateCartItemApi(targetCartId, data, token || undefined);
     } catch (err) {
-      console.warn("Update cart item failed, falling back to create:", err);
+      console.warn("Update cart item failed:", err);
       return null;
     }
   }
