@@ -215,7 +215,7 @@ export default function CheckoutOrderSummary() {
       }
 
       const rzpKey =
-        process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_TY0c6RcNQTqpoI";
+        process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_live_TZp4zF2QNmifU4";
 
       const options: any = {
         key: rzpKey || createdOrder?.order_number,
