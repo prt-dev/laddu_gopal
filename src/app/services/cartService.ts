@@ -1,6 +1,14 @@
 import { BASE_URL } from "@/app/services/authService";
 import { ProductItem } from "@/app/services/productService";
 
+export const CART_STATUS = {
+  FAILED: 0,
+  PENDING: 1,
+  COMPLETED: 2,
+} as const;
+
+export type CartStatus = (typeof CART_STATUS)[keyof typeof CART_STATUS];
+
 export interface CartItem {
   id?: number | string;
   user_id?: number | string;
@@ -10,6 +18,7 @@ export interface CartItem {
   price?: number | string;
   product?: ProductItem;
   products?: any;
+  status?: number; // 0 = failed, 1 = pending, 2 = completed
   created_at?: string;
   updated_at?: string;
 
@@ -99,7 +108,9 @@ function getApiHeaders(token?: string, contentType = "application/json"): Record
 async function handleApiResponse(response: Response, defaultErrorMsg: string) {
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || errorData.message || defaultErrorMsg);
+    const error: any = new Error(errorData.detail || errorData.message || defaultErrorMsg);
+    error.status = response.status;
+    throw error;
   }
   return response.json();
 }
@@ -120,8 +131,9 @@ export function formatCartPayload(data: {
   variant?: string;
   size?: string;
   quantity?: number;
+  status?: number | string;
   [key: string]: any;
-}): { products: string; user_id: number; price: number } {
+}): { products: string; user_id: number; price: number; status?: number } {
   const rawProducts = data.products !== undefined ? data.products : data.cartitems;
   let productsJson: string;
 
@@ -152,11 +164,17 @@ export function formatCartPayload(data: {
     productsJson = "[]";
   }
 
-  return {
+  const payload: { products: string; user_id: number; price: number; status?: number } = {
     products: productsJson,
     user_id: Number(data.user_id),
     price: Number(data.price || 0),
   };
+
+  if (data.status !== undefined && data.status !== null) {
+    payload.status = Number(data.status);
+  }
+
+  return payload;
 }
 
 /**
@@ -192,7 +210,10 @@ export async function addToCartApi(
   data: Partial<CartItem> & { cartitems?: any;[key: string]: any },
   token?: string
 ) {
-  const payload = formatCartPayload(data);
+  const payload = formatCartPayload({
+    ...data,
+    status: data.status !== undefined && data.status !== null ? Number(data.status) : CART_STATUS.PENDING,
+  });
   const response = await fetch(`${BASE_URL}/carts/create`, {
     method: "POST",
     headers: getApiHeaders(token),
@@ -243,15 +264,17 @@ export async function getAllCartsApi(
 }
 
 /**
- * 4. Get Latest Cart by User ID
- * Endpoint: GET /api/v1/carts/latest/{user_id}
+ * 4. Get Latest Cart by User ID where status is pending (1)
+ * Endpoint: GET /api/v1/carts/latest/{user_id}?status=1
  */
 export async function getLatestCartByUserId(
   userId: number | string,
-  token?: string | null
+  token?: string | null,
+  status: number = CART_STATUS.PENDING
 ): Promise<CartItem | null> {
   try {
-    const response = await fetch(`${BASE_URL}/carts/latest/${userId}`, {
+    const url = `${BASE_URL}/carts/latest/${userId}?status=${status}`;
+    const response = await fetch(url, {
       method: "GET",
       headers: getApiHeaders(token || undefined, ""),
     });
@@ -330,7 +353,18 @@ export async function createOrUpdateCartApi(
   if (targetCartId && !isNaN(Number(targetCartId)) && Number(targetCartId) < 100000000000) {
     try {
       return await updateCartItemApi(targetCartId, data, token || undefined);
-    } catch (err) {
+    } catch (err: any) {
+      const isNotFound =
+        err?.status === 404 ||
+        err?.message === "Cart item not found" ||
+        err?.message?.includes("Cart item not found");
+
+      if (isNotFound) {
+        console.warn("Cart item not found on server (404), falling back to create cart:", err);
+        removeStoredCartId();
+        return await addToCartApi(data, token || undefined);
+      }
+
       console.warn("Update cart item failed:", err);
       return null;
     }
@@ -393,6 +427,25 @@ export async function clearMyCartApi(token?: string) {
   const result = await handleApiResponse(response, "Failed to clear cart");
   removeStoredCartId();
   return result;
+}
+
+/**
+ * 10. Update Cart Status
+ * 0 = failed, 1 = pending, 2 = completed
+ * Endpoint: PUT /api/v1/carts/{cart_id}
+ */
+export async function updateCartStatusApi(
+  cartId: number | string,
+  status: 0 | 1 | 2 | number,
+  token?: string
+) {
+  if (!cartId || isNaN(Number(cartId)) || Number(cartId) >= 100000000000) return null;
+  try {
+    return await updateCartItemApi(cartId, { status }, token);
+  } catch (err) {
+    console.warn(`Failed to update cart ${cartId} status to ${status}:`, err);
+    return null;
+  }
 }
 
 // ==========================================

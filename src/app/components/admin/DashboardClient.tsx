@@ -9,7 +9,7 @@ const initialClients: ClientItem[] = [
   {
     name: "Hans Burger",
     title: "10x Developer",
-    amount: "$ 863.45",
+    amount: "₹ 863.45",
     status: "Approved",
     statusBadge: "text-green-700 bg-green-100 dark:bg-green-700 dark:text-green-100",
     date: "6/10/2020",
@@ -18,7 +18,7 @@ const initialClients: ClientItem[] = [
   {
     name: "Jolina Angelie",
     title: "Unemployed",
-    amount: "$ 369.95",
+    amount: "₹ 369.95",
     status: "Pending",
     statusBadge: "text-orange-700 bg-orange-100 dark:text-white dark:bg-orange-600",
     date: "6/10/2020",
@@ -27,7 +27,7 @@ const initialClients: ClientItem[] = [
   {
     name: "Sarah Curry",
     title: "Designer",
-    amount: "$ 86.00",
+    amount: "₹ 86.00",
     status: "Denied",
     statusBadge: "text-red-700 bg-red-100 dark:text-red-100 dark:bg-red-700",
     date: "6/10/2020",
@@ -36,7 +36,7 @@ const initialClients: ClientItem[] = [
   {
     name: "Rulia Joberts",
     title: "Actress",
-    amount: "$ 1276.45",
+    amount: "₹ 1276.45",
     status: "Approved",
     statusBadge: "text-green-700 bg-green-100 dark:bg-green-700 dark:text-green-100",
     date: "6/10/2020",
@@ -45,7 +45,7 @@ const initialClients: ClientItem[] = [
   {
     name: "Wenzel Dashington",
     title: "Actor",
-    amount: "$ 863.45",
+    amount: "₹ 863.45",
     status: "Expired",
     statusBadge: "text-gray-700 bg-gray-100 dark:text-gray-100 dark:bg-gray-700",
     date: "6/10/2020",
@@ -54,7 +54,7 @@ const initialClients: ClientItem[] = [
   {
     name: "Dave Li",
     title: "Influencer",
-    amount: "$ 863.45",
+    amount: "₹ 863.45",
     status: "Approved",
     statusBadge: "text-green-700 bg-green-100 dark:bg-green-700 dark:text-green-100",
     date: "6/10/2020",
@@ -63,7 +63,7 @@ const initialClients: ClientItem[] = [
   {
     name: "Maria Ramovic",
     title: "Runner",
-    amount: "$ 863.45",
+    amount: "₹ 863.45",
     status: "Approved",
     statusBadge: "text-green-700 bg-green-100 dark:bg-green-700 dark:text-green-100",
     date: "6/10/2020",
@@ -72,7 +72,7 @@ const initialClients: ClientItem[] = [
   {
     name: "Hitney Wouston",
     title: "Singer",
-    amount: "$ 863.45",
+    amount: "₹ 863.45",
     status: "Approved",
     statusBadge: "text-green-700 bg-green-100 dark:bg-green-700 dark:text-green-100",
     date: "6/10/2020",

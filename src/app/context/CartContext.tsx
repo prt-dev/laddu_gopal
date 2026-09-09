@@ -150,6 +150,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
         const latestCart = await fetchLatestCartByUserIdApi(targetUserId, token || null);
 
         if (latestCart && latestCart.id && !isNaN(Number(latestCart.id))) {
+          if (latestCart.status !== undefined && latestCart.status !== null && Number(latestCart.status) !== 1) {
+            return;
+          }
           const parsedId = Number(latestCart.id);
           setActiveCartId(parsedId);
           setStoredCartId(parsedId);
@@ -227,12 +230,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 
   // Sync with backend whenever an effective user ID is available
-  useEffect(() => {
-    const uid = getEffectiveUserId();
-    if (uid) {
-      syncWithBackend(uid);
-    }
-  }, [getEffectiveUserId, syncWithBackend]);
+  // useEffect(() => {
+  //   const uid = getEffectiveUserId();
+  //   if (uid) {
+  //     syncWithBackend(uid);
+  //   }
+  // }, [getEffectiveUserId, syncWithBackend]);
 
   // Listen for user fetch events from devotee/checkout actions
   useEffect(() => {
@@ -359,6 +362,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
         const res = await fetchLatestCartByUserIdApi(targetUid, token || null);
         if (!res) return null;
 
+        if (res.status !== undefined && res.status !== null && Number(res.status) !== 1) {
+          return null;
+        }
+
         let latestItem: CartItem | null = null;
         if (Array.isArray(res)) {
           latestItem = res.length > 0 ? res[0] : null;
@@ -401,12 +408,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // Compute resolved cart_id: activeCartId or first valid DB ID from items
   const cartId = useMemo(() => {
     if (activeCartId) return activeCartId;
-    const itemWithId = items.find(
-      (i) => i.id !== undefined && i.id !== null && !isNaN(Number(i.id)) && Number(i.id) < 100000000000
-    );
-    if (itemWithId?.id) return Number(itemWithId.id);
     return undefined;
-  }, [activeCartId, items]);
+  }, [activeCartId]);
 
   const cartCount = useMemo(() => getCartCountHelper(items), [items]);
   const subtotal = useMemo(() => getCartSubtotalHelper(items), [items]);
@@ -414,8 +417,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // Create or Update Cart in backend directly using user_id from fetch user or override
   const createOrUpdateCart = useCallback(
     async (userIdOverride?: number | string): Promise<CartItem | null> => {
-      const targetUid = getEffectiveUserId(userIdOverride);
-
+      let targetUid = userIdOverride;
+      if (!userIdOverride) {
+        targetUid = getEffectiveUserId();
+      }
       if (!targetUid) {
         console.warn("CartContext: Cannot create or update cart without user_id");
         return null;
@@ -426,18 +431,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
       // Determine existing cart_id: activeCartId or fetch latest cart
       let cartIdToUse: number | undefined = activeCartId;
-
-      if (!cartIdToUse) {
-        try {
-          const latest = await fetchLatestCartByUserIdApi(uidNum, token || null);
-          if (latest?.id && !isNaN(Number(latest.id))) {
-            cartIdToUse = Number(latest.id);
-            setActiveCartId(cartIdToUse);
-          }
-        } catch (e) {
-          console.warn("CartContext: Could not check latest cart before create/update:", e);
-        }
-      }
 
       const currentItems = items.length > 0 ? items : getLocalCart();
       const result = await syncCartToServer(currentItems, uidNum, cartIdToUse, token);

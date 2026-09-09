@@ -30,7 +30,7 @@ export const defaultDashcards: DashcardItem[] = [
   {
     id: "account-balance",
     title: "Account balance",
-    value: "$ 46,760.89",
+    value: "₹ 46,760.89",
     iconBgColor: "bg-green-100 dark:bg-green-500",
     iconTextColor: "text-green-500 dark:text-green-100",
     icon: (

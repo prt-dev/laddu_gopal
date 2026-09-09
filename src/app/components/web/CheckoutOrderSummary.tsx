@@ -14,6 +14,7 @@ import {
 } from "@/app/services/paymentService";
 import Loading from "@/app/components/common/Loading";
 import { FetchedUserDetails } from "@/app/services/userService";
+import { updateCartStatusApi, CART_STATUS } from "@/app/services/cartService";
 
 const loadRazorpayScript = (): Promise<boolean> => {
   return new Promise((resolve) => {
@@ -94,15 +95,6 @@ export default function CheckoutOrderSummary() {
         console.warn("Could not save billing details to server:", saveErr);
       }
 
-      // If activeUser is not yet resolved, fallback to checking devotee user profile by phone or email
-      if (!activeUser?.id) {
-        try {
-          activeUser = await fetchDevoteeUser(phone, email);
-        } catch (fetchErr) {
-          console.warn("Could not fetch devotee profile by phone/email:", fetchErr);
-        }
-      }
-
       const resolvedUserId = activeUser?.id
         ? Number(activeUser.id)
         : fetchedUser?.id
@@ -121,16 +113,17 @@ export default function CheckoutOrderSummary() {
           console.warn("createOrUpdateCart on order place error:", cartErr);
         }
 
-        if (!resolvedCartId) {
-          try {
-            const latestCart = await getLatestCartByUserId(resolvedUserId);
-            if (latestCart?.id) {
-              resolvedCartId = Number(latestCart.id);
-            }
-          } catch (cartFetchErr) {
-            console.warn("Could not fetch latest cart by user_id from CartContext:", cartFetchErr);
-          }
-        }
+      } else {
+        setBillingError("User is missing. Please provide a valid phone, email, or username.");
+        setIsPlacingOrder(false);
+        return;
+      }
+      // setIsPlacingOrder(false);
+      // return;
+      if (!resolvedCartId) {
+        setBillingError("Failed to create or update cart. Please try again.");
+        setIsPlacingOrder(false);
+        return;
       }
 
       // Step 3: Then place order
@@ -154,6 +147,9 @@ export default function CheckoutOrderSummary() {
           );
 
           try {
+            if (resolvedCartId) {
+              await updateCartStatusApi(resolvedCartId, CART_STATUS.COMPLETED, token || undefined);
+            }
             await clearCart();
           } catch (clearErr) {
             console.warn("Could not clear cart after COD order:", clearErr);
@@ -162,6 +158,9 @@ export default function CheckoutOrderSummary() {
           }
         } catch (codErr: any) {
           console.error("Failed to place Cash on Delivery order:", codErr);
+          if (resolvedCartId) {
+            await updateCartStatusApi(resolvedCartId, CART_STATUS.FAILED, token || undefined);
+          }
           setBillingError(codErr?.message || "Could not place Cash on Delivery order. Please try again.");
         } finally {
           setIsPlacingOrder(false);
@@ -215,10 +214,10 @@ export default function CheckoutOrderSummary() {
       }
 
       const rzpKey =
-        process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_live_TZp4zF2QNmifU4";
+        process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
 
       const options: any = {
-        key: rzpKey || createdOrder?.order_number,
+        key: rzpKey,
         order_id: createdOrder?.razorpay_order_id || undefined,
         amount: Math.round(totalOrderAmount * 100), // in paise
         currency: "INR",
@@ -266,6 +265,9 @@ export default function CheckoutOrderSummary() {
             }
 
             try {
+              if (resolvedCartId) {
+                await updateCartStatusApi(resolvedCartId, CART_STATUS.COMPLETED, token || undefined);
+              }
               await clearCart();
             } catch (cartErr) {
               console.warn("Could not clear cart:", cartErr);
@@ -277,6 +279,9 @@ export default function CheckoutOrderSummary() {
             }
           } catch (payErr: any) {
             console.warn("Payment verification backend sync:", payErr);
+            if (resolvedCartId) {
+              await updateCartStatusApi(resolvedCartId, CART_STATUS.FAILED, token || undefined);
+            }
             setBillingError(payErr?.message || "Payment verification failed. Please contact support.");
           } finally {
             setIsPlacingOrder(false);
@@ -291,8 +296,11 @@ export default function CheckoutOrderSummary() {
 
       try {
         const rzp = new (window as any).Razorpay(options);
-        rzp.on("payment.failed", function (resp: any) {
+        rzp.on("payment.failed", async function (resp: any) {
           console.error("Razorpay payment failed:", resp.error);
+          if (resolvedCartId) {
+            await updateCartStatusApi(resolvedCartId, CART_STATUS.FAILED, token || undefined);
+          }
           setBillingError(`Payment was declined: ${resp.error?.description || "Transaction failed"}`);
           setIsPlacingOrder(false);
         });

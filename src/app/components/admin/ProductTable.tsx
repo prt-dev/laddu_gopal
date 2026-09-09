@@ -74,7 +74,7 @@ export default function ProductTable({ data, onEdit, onDelete }: ProductTablePro
                       {product.sku || "N/A"}
                     </td>
                     <td className="px-4 py-3 text-sm font-semibold text-gray-800 dark:text-gray-200">
-                      ${product.price !== undefined ? Number(product.price).toFixed(2) : "0.00"}
+                      ₹{product.price !== undefined ? Number(product.price).toFixed(2) : "0.00"}
                     </td>
                     <td className="px-4 py-3 text-xs">
                       <span

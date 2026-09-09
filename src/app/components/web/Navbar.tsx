@@ -376,7 +376,11 @@ export default function Navbar() {
                             </span>
                           </div>
                           <span className="text-xs font-bold text-[#d20b4f]">
-                            {product.price}
+                            {typeof product.price === "number"
+                              ? `₹${product.price.toFixed(2)}`
+                              : String(product.price || "").startsWith("₹")
+                                ? product.price
+                                : `₹${product.price || 0}`}
                           </span>
                         </div>
                       </Link>

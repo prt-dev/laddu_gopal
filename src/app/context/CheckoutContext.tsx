@@ -282,17 +282,9 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
   // Save or update address & devotee details
   const handleSaveDetails = useCallback(
     async (tokenOverride?: string): Promise<FetchedUserDetails | null> => {
-      if (!isBillingFormValid) {
-        setSaveMessage({
-          type: "error",
-          text: `Please fill required fields: ${missingMandatoryFields.join(", ")}`,
-        });
-        setTimeout(() => setSaveMessage(null), 4000);
-        return null;
-      }
+
 
       setIsSaving(true);
-      setSaveMessage(null);
 
       try {
         localStorage.setItem(DEVOTEE_BILLING_STORAGE_KEY, JSON.stringify(formData));
@@ -324,7 +316,6 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
         if (typeof window !== "undefined" && savedUser?.id) {
           localStorage.setItem("devotee_user_id", String(savedUser.id));
           localStorage.setItem("devotee_user", JSON.stringify(savedUser));
-          window.dispatchEvent(new CustomEvent("devotee_user_updated", { detail: savedUser.id }));
         }
         setIsFormSaved(true);
         setSaveMessage({

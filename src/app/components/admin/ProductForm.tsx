@@ -600,7 +600,7 @@ export default function ProductForm({ productId, mode }: ProductFormProps) {
           <div>
             <label className="block text-sm">
               <span className="text-gray-700 dark:text-gray-400 font-medium">
-                Price ($ USD) <span className="text-red-500">*</span>
+                Price (₹ INR) <span className="text-red-500">*</span>
               </span>
               <input
                 type="number"
