@@ -1,42 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import ProductCard from "./ProductCard";
-import { getProducts, ProductItem } from "@/app/services/productService";
+import { useGeneral } from "@/app/context/GeneralContext";
 import Loading from "@/app/components/common/Loading";
 
 export default function KundanCollection() {
-  const [kundanProducts, setKundanProducts] = useState<ProductItem[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-
-  useEffect(() => {
-    let isMounted = true;
-    async function loadKundan() {
-      try {
-        const res = await getProducts({ limit: 50 });
-        if (isMounted) {
-          const filtered = res.products.filter(
-            (p) =>
-              (p.category || "").toLowerCase().includes("kundan") ||
-              p.category_id === 3 ||
-              (p.name || "").toLowerCase().includes("kundan")
-          );
-          setKundanProducts(filtered.slice(0, 4));
-        }
-      } catch (err) {
-        console.error("Error loading kundan collection:", err);
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    }
-    loadKundan();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const { kundanProducts, isLoadingProducts: isLoading } = useGeneral();
 
   return (
     <section className="mx-auto max-w-[1100px] px-5 py-8">

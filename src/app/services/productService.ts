@@ -23,7 +23,8 @@ export interface ProductItem {
   oldPrice?: string;
   sizes?: string[];
   specs?: { label: string; value: string }[];
-  variant?: string;
+  variant?: string | Record<string, number>;
+  variant_prices?: Record<string, number>;
 }
 
 export interface GetProductsParams {
@@ -85,17 +86,55 @@ export function normalizeProduct(p: any): ProductItem {
     desc: p.description,
     category: categoryName,
     category_obj: typeof p.category === "object" ? p.category : undefined,
-    oldPrice: `₹${Math.round(numPrice * 1.4)}.00`,
     variant: p.variant || "",
-    sizes:
-      p.variant !== undefined && p.variant !== null
-        ? String(p.variant)
-            .split(/[,;]/)
-            .map((s: string) => s.trim())
-            .filter(Boolean)
-        : Array.isArray(p.sizes) && p.sizes.length > 0
+    sizes: (() => {
+      if (p.variant !== undefined && p.variant !== null) {
+        if (typeof p.variant === "object" && !Array.isArray(p.variant)) {
+          return Object.keys(p.variant);
+        }
+        if (typeof p.variant === "string") {
+          const str = p.variant.trim();
+          if (str.startsWith("{") && str.endsWith("}")) {
+            try {
+              const parsed = JSON.parse(str);
+              if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
+                return Object.keys(parsed);
+              }
+            } catch {}
+          }
+          if (str.startsWith("[") && str.endsWith("]")) {
+            try {
+              const parsed = JSON.parse(str);
+              if (Array.isArray(parsed)) return parsed;
+            } catch {}
+          }
+          const list = str.split(/[,;]/).map((s: string) => s.trim()).filter(Boolean);
+          if (list.length > 0) return list;
+        }
+      }
+      return Array.isArray(p.sizes) && p.sizes.length > 0
         ? p.sizes
-        : ["Size 0", "Size 1", "Size 2", "Size 3", "Size 4", "Size 5", "Size 6"],
+        : ["Size 0", "Size 1", "Size 2", "Size 3", "Size 4", "Size 5", "Size 6"];
+    })(),
+    variant_prices: (() => {
+      if (p.variant !== undefined && p.variant !== null) {
+        if (typeof p.variant === "object" && !Array.isArray(p.variant)) {
+          return p.variant as Record<string, number>;
+        }
+        if (typeof p.variant === "string") {
+          const str = p.variant.trim();
+          if (str.startsWith("{") && str.endsWith("}")) {
+            try {
+              const parsed = JSON.parse(str);
+              if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
+                return parsed as Record<string, number>;
+              }
+            } catch {}
+          }
+        }
+      }
+      return undefined;
+    })(),
     specs: p.specs || [
       { label: "Craftsmanship", value: "100% Handcrafted by traditional Vrindavan Karigars" },
       { label: "Material", value: "Premium fabric with heavy embroidery & stone work" },

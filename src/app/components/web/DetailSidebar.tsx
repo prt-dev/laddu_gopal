@@ -1,55 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
-import { getProducts, ProductItem } from "@/app/services/productService";
-import { getCategories, CategoryItem } from "@/app/services/categoryService";
+import { useGeneral } from "@/app/context/GeneralContext";
 
 interface DetailSidebarProps {
   currentProductId?: number | string;
 }
 
 export default function DetailSidebar({ currentProductId = 1 }: DetailSidebarProps) {
-  const [featured, setFeatured] = useState<ProductItem[]>([]);
-  const [categories, setCategories] = useState<CategoryItem[]>([]);
-  const [productCounts, setProductCounts] = useState<{ [key: string]: number }>({});
-
+  const { products, categories } = useGeneral();
   const numericCurrentId = typeof currentProductId === "string" ? parseInt(currentProductId, 10) : currentProductId;
 
-  useEffect(() => {
-    let isMounted = true;
-    async function loadData() {
-      try {
-        const [prodRes, catRes] = await Promise.all([
-          getProducts({ limit: 20 }),
-          getCategories({ limit: 20 }),
-        ]);
+  const featured = useMemo(() => {
+    return products.filter((p) => p.id !== numericCurrentId).slice(0, 3);
+  }, [products, numericCurrentId]);
 
-        if (isMounted) {
-          const prods = prodRes.products || [];
-          const cats = catRes.categories || [];
-          setFeatured(prods.filter((p) => p.id !== numericCurrentId).slice(0, 3));
-          setCategories(cats);
-
-          // Calculate product count per category
-          const counts: { [key: string]: number } = {};
-          cats.forEach((c) => {
-            counts[c.name || ""] = prods.filter(
-              (p) => p.category_id === c.id || (p.category && p.category.toLowerCase() === (c.name || "").toLowerCase())
-            ).length;
-          });
-          setProductCounts(counts);
-        }
-      } catch (err) {
-        console.error("Error loading detail sidebar data:", err);
-      }
-    }
-
-    loadData();
-    return () => {
-      isMounted = false;
-    };
-  }, [numericCurrentId]);
+  const productCounts = useMemo(() => {
+    const counts: { [key: string]: number } = {};
+    categories.forEach((c) => {
+      counts[c.name || ""] = products.filter(
+        (p) => p.category_id === c.id || (p.category && p.category.toLowerCase() === (c.name || "").toLowerCase())
+      ).length;
+    });
+    return counts;
+  }, [products, categories]);
 
   return (
     <div className="w-full lg:w-1/4">

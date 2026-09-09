@@ -7,6 +7,7 @@ import React, {
   useEffect,
   useCallback,
   useMemo,
+  useRef,
   ReactNode,
 } from "react";
 import { useWebAuth } from "@/app/context/WebAuthContext";
@@ -44,17 +45,18 @@ export interface CheckoutContextType {
   saveMessage: { type: "success" | "error"; text: string } | null;
   setSaveMessage: (msg: { type: "success" | "error"; text: string } | null) => void;
   fetchedUser: FetchedUserDetails | null;
-  fetchedUserBaseline: BillingFormData | null;
   isLoadingUser: boolean;
   isDataSame: boolean;
+  isBillingFormValid: boolean;
+  missingMandatoryFields: string[];
+  missingDetails: string[];
   fetchDevoteeUser: (phoneOverride?: string, emailOverride?: string) => Promise<FetchedUserDetails | null>;
-  handleSaveDetails: (tokenOverride?: string) => Promise<boolean>;
+  handleSaveDetails: (tokenOverride?: string) => Promise<FetchedUserDetails | null>;
   handleClearSavedDetails: () => void;
   resolvedAddress: string;
   resolvedPhone: string;
   resolvedEmail: string;
   devoteeName: string;
-  missingDetails: string[];
   focusFirstMissingField: () => void;
   focusSaveButton: () => void;
 }
@@ -73,8 +75,31 @@ const initialEmptyForm: BillingFormData = {
   notes: "",
 };
 
+function extractUserDetails(u: any): BillingFormData {
+  if (!u) return initialEmptyForm;
+  let additional: any = u.additional_details;
+  if (typeof additional === "string") {
+    try {
+      additional = JSON.parse(additional);
+    } catch { }
+  }
+  const addObj = additional && typeof additional === "object" ? additional : {};
+
+  return {
+    firstName: (u.firstname || (u.name ? u.name.split(" ")[0] : "") || "").trim(),
+    lastName: (u.lastname || (u.name ? u.name.split(" ").slice(1).join(" ") : "") || "").trim(),
+    address: (u.address || addObj.address || "").trim(),
+    city: (u.city || addObj.city || "").trim(),
+    state: (u.state || addObj.state || "").trim(),
+    pincode: (u.pincode || addObj.pincode || "").trim(),
+    phone: (u.phone || "").trim(),
+    email: (u.email || "").trim(),
+    notes: (u.notes || addObj.notes || "").trim(),
+  };
+}
+
 export function CheckoutProvider({ children }: { children: ReactNode }) {
-  const { user, token, isAuthenticated } = useWebAuth();
+  const { user, token } = useWebAuth();
 
   const [formData, setFormData] = useState<BillingFormData>(initialEmptyForm);
   const [hasSavedData, setHasSavedData] = useState<boolean>(false);
@@ -82,17 +107,60 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [saveMessage, setSaveMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [fetchedUser, setFetchedUser] = useState<FetchedUserDetails | null>(null);
-  const [fetchedUserBaseline, setFetchedUserBaseline] = useState<BillingFormData | null>(null);
   const [isLoadingUser, setIsLoadingUser] = useState<boolean>(false);
 
-  // 1. Initial Load & Baseline Fetching
+  const formDataRef = useRef(formData);
+  formDataRef.current = formData;
+
+  const fetchedUserRef = useRef(fetchedUser);
+  fetchedUserRef.current = fetchedUser;
+
+  // Single centralized user fetcher with memory caching via fetchedUserRef
+  const fetchDevoteeUser = useCallback(
+    async (phoneOverride?: string, emailOverride?: string): Promise<FetchedUserDetails | null> => {
+      const phone = (phoneOverride !== undefined ? phoneOverride : (formDataRef.current.phone || user?.phone || "")).trim();
+      const email = (emailOverride !== undefined ? emailOverride : (formDataRef.current.email || user?.email || "")).trim();
+
+      if (!phone && !email && !token) return null;
+
+      const currentFetched = fetchedUserRef.current;
+      if (
+        currentFetched &&
+        ((phone && currentFetched.phone === phone) || (email && currentFetched.email === email))
+      ) {
+        return currentFetched;
+      }
+
+      try {
+        setIsLoadingUser(true);
+        const fetched = await fetchUserDetailsByPhoneOrEmail({ phone, email }, token || null);
+        if (fetched) {
+          setFetchedUser(fetched);
+          if (typeof window !== "undefined" && fetched.id) {
+            localStorage.setItem("devotee_user_id", String(fetched.id));
+            localStorage.setItem("devotee_user", JSON.stringify(fetched));
+            window.dispatchEvent(new CustomEvent("devotee_user_updated", { detail: fetched.id }));
+          }
+          return fetched;
+        }
+        return null;
+      } catch (err) {
+        console.warn("Error fetching devotee user details:", err);
+        throw err;
+      } finally {
+        setIsLoadingUser(false);
+      }
+    },
+    [user, token]
+  );
+
+  // Initial form loading from localStorage and auth profile (API fetch ONLY if user logged in)
   useEffect(() => {
     let isMounted = true;
 
     const loadInitialData = async () => {
       let initialForm = { ...initialEmptyForm };
 
-      // Check localStorage for saved details
       try {
         const savedData = localStorage.getItem(DEVOTEE_BILLING_STORAGE_KEY);
         if (savedData) {
@@ -106,218 +174,121 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
         console.warn("Could not read stored billing details:", err);
       }
 
-      // If user is authenticated and form missing some identity fields, prefill from auth context
       if (user) {
-        if (!initialForm.firstName && (user.firstname || user.name)) {
-          initialForm.firstName = user.firstname || user.name?.split(" ")[0] || "";
-        }
-        if (!initialForm.lastName && (user.lastname || user.name)) {
-          initialForm.lastName = user.lastname || user.name?.split(" ").slice(1).join(" ") || "";
-        }
-        if (!initialForm.address && user.address) initialForm.address = user.address;
-        if (!initialForm.phone && user.phone) initialForm.phone = user.phone;
-        if (!initialForm.email && user.email) initialForm.email = user.email;
-
+        const u = extractUserDetails(user);
+        (Object.keys(u) as (keyof BillingFormData)[]).forEach((key) => {
+          if (!initialForm[key] && u[key]) initialForm[key] = u[key];
+        });
         if (initialForm.phone || initialForm.email || initialForm.address) {
           if (isMounted) setHasSavedData(true);
-          try {
-            localStorage.setItem(DEVOTEE_BILLING_STORAGE_KEY, JSON.stringify(initialForm));
-          } catch { }
         }
       }
 
-      if (isMounted) {
-        setFormData(initialForm);
-      }
+      if (isMounted) setFormData(initialForm);
 
-      // Check saved status flag
-      try {
-        const savedFlag = localStorage.getItem(DEVOTEE_BILLING_SAVED_STATUS_KEY) === "true";
-        if (savedFlag && isMounted) {
-          setIsFormSaved(true);
-        }
-      } catch { }
+      // Only fetch from backend on initial render IF user is logged in
+      if (user || token) {
+        const phoneToFetch = (initialForm.phone || user?.phone || "").trim();
+        const emailToFetch = (initialForm.email || user?.email || "").trim();
 
-      // Fetch user from backend before changes to establish server baseline
-      const phoneToFetch = (initialForm.phone || user?.phone || "").trim();
-      const emailToFetch = (initialForm.email || user?.email || "").trim();
-
-      if (phoneToFetch || emailToFetch || token) {
-        if (isMounted) setIsLoadingUser(true);
         try {
-          const serverUser = await fetchUserDetailsByPhoneOrEmail(
-            { phone: phoneToFetch, email: emailToFetch },
-            token || null
-          );
-
+          const serverUser = await fetchDevoteeUser(phoneToFetch, emailToFetch);
           if (serverUser && isMounted) {
-            let additional: any = serverUser.additional_details;
-            if (typeof additional === "string") {
-              try {
-                additional = JSON.parse(additional);
-              } catch { }
-            }
-
-            const baseline: BillingFormData = {
-              firstName: (serverUser.firstname || (serverUser.name ? serverUser.name.split(" ")[0] : "") || initialForm.firstName || "").trim(),
-              lastName: (serverUser.lastname || (serverUser.name ? serverUser.name.split(" ").slice(1).join(" ") : "") || initialForm.lastName || "").trim(),
-              address: (serverUser.address || (additional && typeof additional === "object" ? additional.address : "") || initialForm.address || "").trim(),
-              city: (serverUser.city || (additional && typeof additional === "object" ? additional.city : "") || initialForm.city || "").trim(),
-              state: (serverUser.state || (additional && typeof additional === "object" ? additional.state : "") || initialForm.state || "").trim(),
-              pincode: (serverUser.pincode || (additional && typeof additional === "object" ? additional.pincode : "") || initialForm.pincode || "").trim(),
-              phone: (serverUser.phone || initialForm.phone || "").trim(),
-              email: (serverUser.email || initialForm.email || "").trim(),
-              notes: (serverUser.notes || (additional && typeof additional === "object" ? additional.notes : "") || initialForm.notes || "").trim(),
-            };
-
-            setFetchedUser(serverUser);
-            setFetchedUserBaseline(baseline);
+            const serverDetails = extractUserDetails(serverUser);
             setHasSavedData(true);
             setIsFormSaved(true);
-
-            // Populate form with server values if local fields are empty
-            setFormData((prev) => ({
-              firstName: prev.firstName || baseline.firstName,
-              lastName: prev.lastName || baseline.lastName,
-              address: prev.address || baseline.address,
-              city: prev.city || baseline.city,
-              state: prev.state || baseline.state,
-              pincode: prev.pincode || baseline.pincode,
-              phone: prev.phone || baseline.phone,
-              email: prev.email || baseline.email,
-              notes: prev.notes || baseline.notes,
-            }));
-
-            try {
-              localStorage.setItem(DEVOTEE_BILLING_SAVED_STATUS_KEY, "true");
-              window.dispatchEvent(
-                new CustomEvent("devotee_billing_saved", { detail: { isSaved: true, user: serverUser } })
-              );
-            } catch { }
-          } else if (user && isMounted) {
-            // Auth user fallback baseline
-            const authBaseline: BillingFormData = {
-              firstName: (user.firstname || (user.name ? user.name.split(" ")[0] : "") || initialForm.firstName || "").trim(),
-              lastName: (user.lastname || (user.name ? user.name.split(" ").slice(1).join(" ") : "") || initialForm.lastName || "").trim(),
-              address: (user.address || initialForm.address || "").trim(),
-              city: (initialForm.city || "").trim(),
-              state: (initialForm.state || "").trim(),
-              pincode: (initialForm.pincode || "").trim(),
-              phone: (user.phone || initialForm.phone || "").trim(),
-              email: (user.email || initialForm.email || "").trim(),
-              notes: (initialForm.notes || "").trim(),
-            };
-            if (authBaseline.phone || authBaseline.email) {
-              setFetchedUserBaseline(authBaseline);
-            }
+            setFormData((prev) => {
+              const merged = { ...prev };
+              (Object.keys(serverDetails) as (keyof BillingFormData)[]).forEach((k) => {
+                if (!merged[k] && serverDetails[k]) merged[k] = serverDetails[k];
+              });
+              return merged;
+            });
           }
         } catch (err) {
-          console.warn("Could not fetch user details before change:", err);
+          console.warn("Could not fetch user details on mount:", err);
         } finally {
-          if (isMounted) setIsLoadingUser(false);
+          // Mount fetch complete
         }
       }
     };
 
     loadInitialData();
-
-    // Listen for custom event dispatch if external updates occur
-    const handleSavedEvent = (e: any) => {
-      if (isMounted) {
-        setIsFormSaved(Boolean(e.detail?.isSaved));
-        if (e.detail?.user) {
-          setFetchedUser(e.detail.user);
-        }
-      }
-    };
-
-    window.addEventListener("devotee_billing_saved", handleSavedEvent);
     return () => {
       isMounted = false;
-      window.removeEventListener("devotee_billing_saved", handleSavedEvent);
     };
-  }, [user, token]);
+  }, [user, token, fetchDevoteeUser]);
 
-  // 2. Fetch Devotee User On-Demand Helper
-  const fetchDevoteeUser = useCallback(
-    async (phoneOverride?: string, emailOverride?: string): Promise<FetchedUserDetails | null> => {
-      const phone = (phoneOverride ?? formData.phone ?? user?.phone ?? "").trim();
-      const email = (emailOverride ?? formData.email ?? user?.email ?? "").trim();
-
-      if (!phone && !email && !token) return null;
-
-      try {
-        const fetched = await fetchUserDetailsByPhoneOrEmail({ phone, email }, token || null);
-        if (fetched) {
-          setFetchedUser(fetched);
-          return fetched;
-        }
-      } catch (err) {
-        console.warn("Error fetching devotee user details in CheckoutContext:", err);
-        throw err;
-      }
-      return null;
-    },
-    [formData.phone, formData.email, user, token]
-  );
-
-  // 3. Dirty Checking: Compare Current Form Data with Server Baseline
+  // Dirty checking: Compare formData against server/auth devotee profile
   const isDataSame = useMemo(() => {
-    if (!fetchedUserBaseline) return false;
-    const norm = (str: string = "") => str.trim().toLowerCase();
+    const target = fetchedUser || user;
+    if (!target) return false;
+    const u = extractUserDetails(target);
+    const norm = (str?: string) => (str || "").trim().toLowerCase();
 
     return (
-      norm(formData.firstName) === norm(fetchedUserBaseline.firstName) &&
-      norm(formData.lastName) === norm(fetchedUserBaseline.lastName) &&
-      norm(formData.address) === norm(fetchedUserBaseline.address) &&
-      norm(formData.city) === norm(fetchedUserBaseline.city) &&
-      norm(formData.state) === norm(fetchedUserBaseline.state) &&
-      norm(formData.pincode) === norm(fetchedUserBaseline.pincode) &&
-      norm(formData.phone) === norm(fetchedUserBaseline.phone) &&
-      norm(formData.email) === norm(fetchedUserBaseline.email) &&
-      norm(formData.notes) === norm(fetchedUserBaseline.notes)
+      norm(formData.firstName) === norm(u.firstName) &&
+      norm(formData.lastName) === norm(u.lastName) &&
+      norm(formData.address) === norm(u.address) &&
+      norm(formData.city) === norm(u.city) &&
+      norm(formData.state) === norm(u.state) &&
+      norm(formData.pincode) === norm(u.pincode) &&
+      norm(formData.phone) === norm(u.phone) &&
+      norm(formData.email) === norm(u.email) &&
+      norm(formData.notes) === norm(u.notes)
     );
-  }, [formData, fetchedUserBaseline]);
+  }, [formData, fetchedUser, user]);
 
-  // 4. Update Form Field
+  // Validation: Check mandatory form fields (first name, address, city, state, pincode, mobile)
+  const missingMandatoryFields = useMemo(() => {
+    const missing: string[] = [];
+    if (!formData.firstName.trim()) missing.push("First Name");
+    if (!formData.address.trim()) missing.push("Delivery Address");
+    if (!formData.city.trim()) missing.push("Town / City");
+    if (!formData.state.trim()) missing.push("State");
+    if (!formData.pincode.trim() || formData.pincode.trim().length !== 6) {
+      missing.push("6-digit PIN Code");
+    }
+    if (!formData.phone.trim() || formData.phone.trim().length !== 10) {
+      missing.push("10-digit Mobile Number");
+    }
+    if (formData.email.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email.trim())) {
+        missing.push("Valid Email Address");
+      }
+    }
+    return missing;
+  }, [formData]);
+
+  const isBillingFormValid = useMemo(() => {
+    return missingMandatoryFields.length === 0;
+  }, [missingMandatoryFields]);
+
+  const missingDetails = missingMandatoryFields;
+
+  // Field updater
   const updateFormField = useCallback((name: keyof BillingFormData | string, value: string) => {
     setFormData((prev) => {
-      const updated = {
-        ...prev,
-        [name]: value,
-      };
+      const updated = { ...prev, [name]: value };
       try {
         localStorage.setItem(DEVOTEE_BILLING_STORAGE_KEY, JSON.stringify(updated));
-        localStorage.setItem(DEVOTEE_BILLING_SAVED_STATUS_KEY, "false");
-        window.dispatchEvent(new CustomEvent("devotee_billing_updated", { detail: updated }));
-        window.dispatchEvent(new CustomEvent("devotee_billing_saved", { detail: { isSaved: false } }));
       } catch { }
       return updated;
     });
     setIsFormSaved(false);
   }, []);
 
-  // 5. Save Details to Server
+  // Save or update address & devotee details
   const handleSaveDetails = useCallback(
-    async (tokenOverride?: string): Promise<boolean> => {
-      const activeToken = tokenOverride || token;
-
-      if (
-        !formData.firstName.trim() ||
-        formData.phone.trim().length !== 10 ||
-        !formData.email.trim() ||
-        !formData.address.trim()
-      ) {
+    async (tokenOverride?: string): Promise<FetchedUserDetails | null> => {
+      if (!isBillingFormValid) {
         setSaveMessage({
           type: "error",
-          text: "Please fill required fields before saving.",
+          text: `Please fill required fields: ${missingMandatoryFields.join(", ")}`,
         });
         setTimeout(() => setSaveMessage(null), 4000);
-        try {
-          localStorage.setItem(DEVOTEE_BILLING_SAVED_STATUS_KEY, "false");
-          window.dispatchEvent(new CustomEvent("devotee_billing_saved", { detail: { isSaved: false } }));
-        } catch { }
-        return false;
+        return null;
       }
 
       setIsSaving(true);
@@ -330,12 +301,16 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
         console.warn("Could not save to localStorage:", e);
       }
 
+      const loggedInUserId = user?.id || (user as any)?.user_id;
+      const targetUserId = loggedInUserId || fetchedUser?.id;
+
       const payload: UserSavePayload = {
+        id: targetUserId || undefined,
         firstname: formData.firstName.trim(),
         lastname: formData.lastName.trim(),
         name: `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim(),
         phone: formData.phone.trim(),
-        email: formData.email.trim(),
+        email: formData.email.trim() || undefined,
         address: formData.address.trim(),
         city: formData.city.trim(),
         state: formData.state.trim(),
@@ -344,35 +319,20 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
       };
 
       try {
-        const savedUser = await saveUserApi(payload, activeToken || null);
-
+        const savedUser = await saveUserApi(payload, tokenOverride || token || null, targetUserId);
         setFetchedUser(savedUser);
-        setFetchedUserBaseline({
-          firstName: formData.firstName.trim(),
-          lastName: formData.lastName.trim(),
-          address: formData.address.trim(),
-          city: formData.city.trim(),
-          state: formData.state.trim(),
-          pincode: formData.pincode.trim(),
-          phone: formData.phone.trim(),
-          email: formData.email.trim(),
-          notes: formData.notes.trim(),
-        });
+        if (typeof window !== "undefined" && savedUser?.id) {
+          localStorage.setItem("devotee_user_id", String(savedUser.id));
+          localStorage.setItem("devotee_user", JSON.stringify(savedUser));
+          window.dispatchEvent(new CustomEvent("devotee_user_updated", { detail: savedUser.id }));
+        }
         setIsFormSaved(true);
-
         setSaveMessage({
           type: "success",
           text: "Address details saved successfully to your devotee profile! 🪔",
         });
         setTimeout(() => setSaveMessage(null), 4000);
-
-        try {
-          localStorage.setItem(DEVOTEE_BILLING_SAVED_STATUS_KEY, "true");
-          window.dispatchEvent(
-            new CustomEvent("devotee_billing_saved", { detail: { isSaved: true, user: savedUser } })
-          );
-        } catch { }
-        return true;
+        return savedUser;
       } catch (err: any) {
         console.warn("User Save API error:", err);
         setSaveMessage({
@@ -380,28 +340,25 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
           text: err?.message || "Could not save address to server. Please try again.",
         });
         setTimeout(() => setSaveMessage(null), 5000);
-
-        try {
-          localStorage.setItem(DEVOTEE_BILLING_SAVED_STATUS_KEY, "false");
-          window.dispatchEvent(new CustomEvent("devotee_billing_saved", { detail: { isSaved: false } }));
-        } catch { }
-        return false;
+        return null;
       } finally {
         setIsSaving(false);
       }
     },
-    [formData, token]
+    [formData, token, user, isBillingFormValid, missingMandatoryFields, fetchedUser]
   );
 
-  // 6. Clear Details
+  // Clear saved details
   const handleClearSavedDetails = useCallback(() => {
     try {
       localStorage.removeItem(DEVOTEE_BILLING_STORAGE_KEY);
-      localStorage.setItem(DEVOTEE_BILLING_SAVED_STATUS_KEY, "false");
-      window.dispatchEvent(new CustomEvent("devotee_billing_saved", { detail: { isSaved: false } }));
+      localStorage.removeItem("devotee_user_id");
+      localStorage.removeItem("devotee_user");
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("devotee_user_updated", { detail: null }));
+      }
       setHasSavedData(false);
       setIsFormSaved(false);
-      setFetchedUserBaseline(null);
       setFormData(initialEmptyForm);
       setSaveMessage({
         type: "success",
@@ -413,60 +370,47 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // 7. Resolved Customer Details & Missing Validations
-  const resolvedAddress = useMemo(() => {
-    return (
-      formData.address ||
-      fetchedUser?.address ||
-      (fetchedUser?.additional_details && typeof fetchedUser.additional_details === "object"
-        ? fetchedUser.additional_details.address
-        : "") ||
-      user?.address ||
-      ""
-    ).trim();
-  }, [formData.address, fetchedUser, user?.address]);
+  // Customer details getters
+  const resolvedAddress = (formData.address || fetchedUser?.address || user?.address || "").trim();
+  const resolvedEmail = (formData.email || fetchedUser?.email || user?.email || "").trim();
+  const resolvedPhone = (formData.phone || fetchedUser?.phone || user?.phone || "").trim();
+  const devoteeName =
+    `${formData.firstName} ${formData.lastName}`.trim() ||
+    fetchedUser?.name ||
+    user?.name ||
+    (user?.firstname ? `${user.firstname} ${user.lastname || ""}`.trim() : "") ||
+    "Devotee";
 
-  const resolvedEmail = useMemo(() => {
-    return (formData.email || fetchedUser?.email || user?.email || "").trim();
-  }, [formData.email, fetchedUser?.email, user?.email]);
-
-  const resolvedPhone = useMemo(() => {
-    return (formData.phone || fetchedUser?.phone || user?.phone || "").trim();
-  }, [formData.phone, fetchedUser?.phone, user?.phone]);
-
-  const devoteeName = useMemo(() => {
-    const fromForm = `${formData.firstName || ""} ${formData.lastName || ""}`.trim();
-    if (fromForm) return fromForm;
-    if (fetchedUser?.name) return fetchedUser.name;
-    if (user?.name) return user.name;
-    if (user?.firstname) return `${user.firstname} ${user.lastname || ""}`.trim();
-    return "Devotee";
-  }, [formData.firstName, formData.lastName, fetchedUser?.name, user]);
-
-  const missingDetails = useMemo(() => {
-    const missing: string[] = [];
-    if (!resolvedEmail) missing.push("Email Address");
-    if (!resolvedPhone || resolvedPhone.length < 10) missing.push("10-digit Mobile Number");
-    if (!resolvedAddress) missing.push("Delivery Address");
-    return missing;
-  }, [resolvedEmail, resolvedPhone, resolvedAddress]);
-
-  // 8. Focus Helpers
+  // Focus helpers
   const focusFirstMissingField = useCallback(() => {
-    if (!resolvedPhone || resolvedPhone.length < 10) {
-      const el = document.querySelector('input[name="phone"]') as HTMLInputElement | null;
-      el?.scrollIntoView({ behavior: "smooth", block: "center" });
-      el?.focus();
-    } else if (!resolvedAddress) {
-      const el = document.querySelector('input[name="address"]') as HTMLInputElement | null;
-      el?.scrollIntoView({ behavior: "smooth", block: "center" });
-      el?.focus();
-    } else if (!resolvedEmail) {
-      const el = document.querySelector('input[name="email"]') as HTMLInputElement | null;
+    const fieldsOrder: { selector: string; invalid: boolean }[] = [
+      { selector: 'input[name="firstName"]', invalid: !formData.firstName.trim() },
+      { selector: 'input[name="address"]', invalid: !formData.address.trim() },
+      { selector: 'input[name="city"]', invalid: !formData.city.trim() },
+      { selector: 'input[name="state"]', invalid: !formData.state.trim() },
+      {
+        selector: 'input[name="pincode"]',
+        invalid: !formData.pincode.trim() || formData.pincode.trim().length !== 6,
+      },
+      {
+        selector: 'input[name="phone"]',
+        invalid: !formData.phone.trim() || formData.phone.trim().length !== 10,
+      },
+      {
+        selector: 'input[name="email"]',
+        invalid: Boolean(
+          formData.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())
+        ),
+      },
+    ];
+
+    const firstInvalid = fieldsOrder.find((f) => f.invalid);
+    if (firstInvalid) {
+      const el = document.querySelector(firstInvalid.selector) as HTMLInputElement | null;
       el?.scrollIntoView({ behavior: "smooth", block: "center" });
       el?.focus();
     }
-  }, [resolvedPhone, resolvedAddress, resolvedEmail]);
+  }, [formData]);
 
   const focusSaveButton = useCallback(() => {
     const saveBtn = document.getElementById("save-address-btn");
@@ -491,9 +435,11 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
     saveMessage,
     setSaveMessage,
     fetchedUser,
-    fetchedUserBaseline,
     isLoadingUser,
     isDataSame,
+    isBillingFormValid,
+    missingMandatoryFields,
+    missingDetails,
     fetchDevoteeUser,
     handleSaveDetails,
     handleClearSavedDetails,
@@ -501,7 +447,6 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
     resolvedPhone,
     resolvedEmail,
     devoteeName,
-    missingDetails,
     focusFirstMissingField,
     focusSaveButton,
   };

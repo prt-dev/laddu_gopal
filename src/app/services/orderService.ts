@@ -30,6 +30,8 @@ export interface CreateOrderPayload {
   email?: string;
   username?: string;
   user_id?: number;
+  cart_id?: number;
+  products?: string | any;
   order_number?: string;
   razorpay_order_id?: string;
 }
@@ -206,6 +208,49 @@ export async function createOrderApi(
       email: payload.email || undefined,
       username: payload.username || undefined,
       user_id: payload.user_id || undefined,
+      cart_id: payload.cart_id || undefined,
+      products: payload.products || undefined,
+      order_number: payload.order_number || undefined,
+      razorpay_order_id: payload.razorpay_order_id || undefined,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      errorData.detail || errorData.message || "Failed to create order"
+    );
+  }
+
+  return response.json();
+}
+
+export async function createRazorpayOrderApi(
+  payload: CreateOrderPayload,
+  token?: string | null
+): Promise<OrderItem> {
+  const url = `${BASE_URL}/razorpay/create-order`;
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  };
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      amount: payload.amount,
+      currency: payload.currency || "INR",
+      status: payload.status || "pending",
+      phone: payload.phone || undefined,
+      email: payload.email || undefined,
+      username: payload.username || undefined,
+      user_id: payload.user_id || undefined,
+      cart_id: payload.cart_id || undefined,
+      products: payload.products || undefined,
       order_number: payload.order_number || undefined,
       razorpay_order_id: payload.razorpay_order_id || undefined,
     }),

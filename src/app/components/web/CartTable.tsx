@@ -116,11 +116,11 @@ export default function CartTable() {
         <div className="flex flex-col sm:flex-row gap-2">
           <input
             type="text"
-            className="rounded border border-gray-300 px-3 py-2 text-xs text-black focus:border-[#d20b4f] focus:outline-hidden sm:w-60"
+            className="hidden rounded border border-gray-300 px-3 py-2 text-xs text-black focus:border-[#d20b4f] focus:outline-hidden sm:w-60"
             placeholder="Coupon Code"
           />
           <button
-            className="rounded bg-[#d20b4f] px-5 py-2 text-xs font-bold text-white transition hover:bg-[#b80943] border-0 cursor-pointer shadow-xs"
+            className="hidden rounded bg-[#d20b4f] px-5 py-2 text-xs font-bold text-white transition hover:bg-[#b80943] border-0 cursor-pointer shadow-xs"
             type="button"
           >
             Apply Coupon

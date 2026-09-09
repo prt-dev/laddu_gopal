@@ -4,6 +4,7 @@ import "../web.css";
 import { siteConfig } from "../config/site";
 import { WebAuthProvider } from "../context/WebAuthContext";
 import { CartProvider } from "../context/CartContext";
+import { GeneralProvider } from "../context/GeneralContext";
 import WebProtectedRoute from "../context/WebProtectedRoute";
 
 export const metadata: Metadata = {
@@ -20,19 +21,21 @@ export default function WebLayout({ children }: { children: React.ReactNode }) {
   return (
     <WebAuthProvider>
       <CartProvider>
-        <WebProtectedRoute>
-          {/* Head Stylesheet Links */}
-          <link
-            rel="stylesheet"
-            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
-          />
-          <link
-            rel="stylesheet"
-            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css"
-          />
+        <GeneralProvider>
+          <WebProtectedRoute>
+            {/* Head Stylesheet Links */}
+            <link
+              rel="stylesheet"
+              href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+            />
+            <link
+              rel="stylesheet"
+              href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css"
+            />
 
-          <WebLayoutClient>{children}</WebLayoutClient>
-        </WebProtectedRoute>
+            <WebLayoutClient>{children}</WebLayoutClient>
+          </WebProtectedRoute>
+        </GeneralProvider>
       </CartProvider>
     </WebAuthProvider>
   );

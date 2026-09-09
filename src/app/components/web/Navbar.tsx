@@ -5,43 +5,17 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { siteConfig } from "../../config/site";
 import { useWebAuth } from "@/app/context/WebAuthContext";
-import { useCart } from "@/app/context/CartContext";
-import { getProducts, ProductItem } from "@/app/services/productService";
-import { getCategories, CategoryItem } from "@/app/services/categoryService";
+import { useGeneral } from "@/app/context/GeneralContext";
 
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isAuthenticated, logout } = useWebAuth();
-  const { cartCount } = useCart();
+  const { products: productsList, categories: categoriesList, cartCount } = useGeneral();
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [productsList, setProductsList] = useState<ProductItem[]>([]);
-  const [categoriesList, setCategoriesList] = useState<CategoryItem[]>([]);
-
-  useEffect(() => {
-    let isMounted = true;
-    async function loadNavData() {
-      try {
-        const [prodRes, catRes] = await Promise.all([
-          getProducts({ limit: 50 }),
-          getCategories({ limit: 20 }),
-        ]);
-        if (isMounted) {
-          setProductsList(prodRes.products || []);
-          setCategoriesList(catRes.categories || []);
-        }
-      } catch (err) {
-        console.error("Navbar data fetch error:", err);
-      }
-    }
-    loadNavData();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   useEffect(() => {
     setIsNavOpen(false);

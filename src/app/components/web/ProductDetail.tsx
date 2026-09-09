@@ -61,7 +61,12 @@ export default function ProductDetail({ productId, initialSize }: ProductDetailP
   }
 
   const sizes = product.sizes || ["Size 0", "Size 1", "Size 2", "Size 3", "Size 4", "Size 5", "Size 6"];
-  const formattedPrice = typeof product.price === "number" ? `₹${product.price.toFixed(2)}` : product.price;
+  const basePrice = typeof product.price === "number" ? product.price : parseFloat(String(product.price || 0)) || 0;
+  const currentPrice =
+    product.variant_prices && product.variant_prices[selectedSize] !== undefined
+      ? Number(product.variant_prices[selectedSize])
+      : basePrice;
+  const formattedPrice = `₹${currentPrice.toFixed(2)}`;
 
   return (
     <div className="w-full lg:w-3/4">
@@ -144,7 +149,7 @@ export default function ProductDetail({ productId, initialSize }: ProductDetailP
               <AddToCartButton
                 productId={product.id || 1}
                 variant={selectedSize}
-                price={product.price || 0}
+                price={currentPrice}
                 quantity={1}
                 product={product as any}
                 className="px-6 py-2.5 text-sm"

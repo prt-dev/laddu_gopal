@@ -38,7 +38,12 @@ export default function ProductCard({
   const displayImage = product.img || product.image_url || "/assets/best-selling.png";
   const displayDesc = product.desc || product.description || "";
   const displayCategory = product.category || "Poshak";
-  const displayPrice = typeof product.price === "number" ? `₹${product.price.toFixed(2)}` : product.price;
+  const basePrice = typeof product.price === "number" ? product.price : parseFloat(String(product.price || 0)) || 0;
+  const currentPrice =
+    product.variant_prices && product.variant_prices[activeSize] !== undefined
+      ? Number(product.variant_prices[activeSize])
+      : basePrice;
+  const displayPrice = `₹${currentPrice.toFixed(2)}`;
 
   return (
     <div className="flex flex-col rounded-lg border border-[#fff0ad] bg-white overflow-hidden shadow-xs hover:shadow-md transition-shadow">
@@ -133,7 +138,7 @@ export default function ProductCard({
           <AddToCartButton
             productId={product.id || 1}
             variant={activeSize}
-            price={product.price || 0}
+            price={currentPrice}
             quantity={1}
             product={product as any}
           />

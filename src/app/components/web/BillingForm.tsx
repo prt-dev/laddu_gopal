@@ -1,30 +1,69 @@
 "use client";
 
-import React from "react";
-import SaveDetailsButton from "./SaveDetailsButton";
+import React, { useState, useMemo, useEffect } from "react";
 import { useWebAuth } from "@/app/context/WebAuthContext";
 import {
   useCheckout,
   BillingFormData,
   DEVOTEE_BILLING_STORAGE_KEY,
 } from "@/app/context/CheckoutContext";
+import {
+  ALL_INDIAN_STATES,
+  getCitiesForState,
+} from "@/app/data/indianStatesCities";
 
 export type { BillingFormData };
 export { DEVOTEE_BILLING_STORAGE_KEY };
 
 export default function BillingForm() {
-  const { isAuthenticated, token } = useWebAuth();
+  const { isAuthenticated } = useWebAuth();
   const {
     formData,
     updateFormField,
     hasSavedData,
-    isSaving,
     saveMessage,
-    isDataSame,
-    isLoadingUser,
-    handleSaveDetails,
     handleClearSavedDetails,
   } = useCheckout();
+
+  // Dynamic cities based on chosen Indian State
+  const availableCities = useMemo(() => {
+    return getCitiesForState(formData.state);
+  }, [formData.state]);
+
+  const isCityInList = useMemo(() => {
+    if (!formData.city || availableCities.length === 0) return false;
+    return availableCities.some(
+      (c) => c.toLowerCase() === formData.city.trim().toLowerCase()
+    );
+  }, [formData.city, availableCities]);
+
+  const [isOtherCitySelected, setIsOtherCitySelected] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!formData.city) {
+      setIsOtherCitySelected(false);
+    } else if (availableCities.length > 0 && !isCityInList) {
+      setIsOtherCitySelected(true);
+    }
+  }, [formData.city, availableCities, isCityInList]);
+
+  const handleStateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newState = e.target.value;
+    updateFormField("state", newState);
+    updateFormField("city", "");
+    setIsOtherCitySelected(false);
+  };
+
+  const handleCitySelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    if (val === "Other") {
+      setIsOtherCitySelected(true);
+      updateFormField("city", "");
+    } else {
+      setIsOtherCitySelected(false);
+      updateFormField("city", val);
+    }
+  };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -53,7 +92,7 @@ export default function BillingForm() {
         </div>
         <div>
           <label className="block text-xs font-bold text-black mb-1">
-            Last Name<sup className="text-[#d20b4f]">*</sup>
+            Last Name (Optional)
           </label>
           <input
             type="text"
@@ -61,7 +100,6 @@ export default function BillingForm() {
             value={formData.lastName}
             onChange={handleChange}
             placeholder="e.g. Sharma"
-            required
             className="w-full rounded border border-gray-300 px-3 py-2 text-xs text-black focus:border-[#d20b4f] focus:outline-hidden transition"
           />
         </div>
@@ -83,35 +121,73 @@ export default function BillingForm() {
         />
       </div>
 
-      {/* Town/City + State */}
+      {/* State + Town/City */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-bold text-black mb-1">
-            Town / City<sup className="text-[#d20b4f]">*</sup>
-          </label>
-          <input
-            type="text"
-            name="city"
-            value={formData.city}
-            onChange={handleChange}
-            placeholder="e.g. Kolkata / Mumbai / Delhi"
-            required
-            className="w-full rounded border border-gray-300 px-3 py-2 text-xs text-black focus:border-[#d20b4f] focus:outline-hidden transition"
-          />
-        </div>
         <div>
           <label className="block text-xs font-bold text-black mb-1">
             State<sup className="text-[#d20b4f]">*</sup>
           </label>
-          <input
-            type="text"
+          <select
             name="state"
             value={formData.state}
-            onChange={handleChange}
-            placeholder="e.g. West Bengal / Delhi"
+            onChange={handleStateChange}
             required
-            className="w-full rounded border border-gray-300 px-3 py-2 text-xs text-black focus:border-[#d20b4f] focus:outline-hidden transition"
-          />
+            className="w-full rounded border border-gray-300 px-3 py-2 text-xs text-black focus:border-[#d20b4f] focus:outline-hidden transition bg-white cursor-pointer"
+          >
+            <option value="">-- Select Indian State / UT --</option>
+            {ALL_INDIAN_STATES.map((st) => (
+              <option key={st} value={st}>
+                {st}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-black mb-1">
+            Town / City<sup className="text-[#d20b4f]">*</sup>
+          </label>
+          {availableCities.length > 0 ? (
+            <div className="space-y-2">
+              <select
+                name="citySelect"
+                value={isOtherCitySelected ? "Other" : (isCityInList ? formData.city : "")}
+                onChange={handleCitySelectChange}
+                required={!isOtherCitySelected}
+                className="w-full rounded border border-gray-300 px-3 py-2 text-xs text-black focus:border-[#d20b4f] focus:outline-hidden transition bg-white cursor-pointer"
+              >
+                <option value="">-- Select City in {formData.state} --</option>
+                {availableCities.map((ct) => (
+                  <option key={ct} value={ct}>
+                    {ct}
+                  </option>
+                ))}
+              </select>
+
+              {isOtherCitySelected && (
+                <input
+                  type="text"
+                  name="city"
+                  value={formData.city}
+                  onChange={handleChange}
+                  placeholder="Enter your town, tehsil, or village name..."
+                  required
+                  autoFocus
+                  className="w-full rounded border border-gray-300 px-3 py-2 text-xs text-black focus:border-[#d20b4f] focus:outline-hidden transition"
+                />
+              )}
+            </div>
+          ) : (
+            <input
+              type="text"
+              name="city"
+              value={formData.city}
+              onChange={handleChange}
+              placeholder={formData.state ? "Enter your city/town" : "Please select State first"}
+              required
+              className="w-full rounded border border-gray-300 px-3 py-2 text-xs text-black focus:border-[#d20b4f] focus:outline-hidden transition"
+            />
+          )}
         </div>
       </div>
 
@@ -153,7 +229,7 @@ export default function BillingForm() {
       {/* Email Address */}
       <div>
         <label className="block text-xs font-bold text-black mb-1">
-          Email Address<sup className="text-[#d20b4f]">*</sup>
+          Email Address (Optional)
         </label>
         <input
           type="email"
@@ -161,7 +237,6 @@ export default function BillingForm() {
           value={formData.email}
           onChange={handleChange}
           placeholder="yourname@example.com (For order receipt & tracking updates)"
-          required
           className="w-full rounded border border-gray-300 px-3 py-2 text-xs text-black focus:border-[#d20b4f] focus:outline-hidden transition"
         />
       </div>
@@ -181,48 +256,40 @@ export default function BillingForm() {
         />
       </div>
 
-      {/* Save Details Action & Feedback */}
-      <div className="pt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-t border-gray-100">
-        <div className="flex flex-wrap items-center gap-3">
-          <SaveDetailsButton
-            id="save-address-btn"
-            type="button"
-            loading={isSaving}
-            disabled={isDataSame || isSaving || isLoadingUser}
-            onClick={() => handleSaveDetails(token || undefined)}
-            label="Save Address"
-            title={isDataSame ? "Address details are already saved and match the backend devotee profile" : undefined}
-          />
-
-          {hasSavedData && (
-            <div className="flex items-center gap-2 rounded-lg bg-[#fff0ad]/40 border border-[#d20b4f]/20 px-3 py-1.5 text-xs text-gray-800">
-              <span className="font-bold text-[#d20b4f] flex items-center gap-1">
-                <span>✓</span>
-                <span>
-                  {isAuthenticated ? "Devotee profile address loaded" : "Saved delivery details loaded"}
+      {/* Saved Details Status & Clear Form */}
+      {(hasSavedData || saveMessage) && (
+        <div className="pt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-t border-gray-100">
+          <div className="flex flex-wrap items-center gap-3">
+            {hasSavedData && (
+              <div className="flex items-center gap-2 rounded-lg bg-[#fff0ad]/40 border border-[#d20b4f]/20 px-3 py-1.5 text-xs text-gray-800">
+                <span className="font-bold text-[#d20b4f] flex items-center gap-1">
+                  <span>✓</span>
+                  <span>
+                    {isAuthenticated ? "Devotee profile address loaded" : "Saved delivery details loaded"}
+                  </span>
                 </span>
-              </span>
-              <span className="text-gray-400">|</span>
-              <button
-                type="button"
-                onClick={handleClearSavedDetails}
-                className="text-[11px] font-bold text-gray-600 hover:text-[#d20b4f] underline cursor-pointer border-0 bg-transparent p-0"
-              >
-                Clear Form
-              </button>
-            </div>
+                <span className="text-gray-400">|</span>
+                <button
+                  type="button"
+                  onClick={handleClearSavedDetails}
+                  className="text-[11px] font-bold text-gray-600 hover:text-[#d20b4f] underline cursor-pointer border-0 bg-transparent p-0"
+                >
+                  Clear Form
+                </button>
+              </div>
+            )}
+          </div>
+
+          {saveMessage && (
+            <p
+              className={`text-xs font-semibold ${saveMessage.type === "success" ? "text-green-700" : "text-red-600"
+                }`}
+            >
+              {saveMessage.text}
+            </p>
           )}
         </div>
-
-        {saveMessage && (
-          <p
-            className={`text-xs font-semibold ${saveMessage.type === "success" ? "text-green-700" : "text-red-600"
-              }`}
-          >
-            {saveMessage.text}
-          </p>
-        )}
-      </div>
+      )}
     </div>
   );
 }

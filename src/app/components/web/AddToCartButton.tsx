@@ -112,7 +112,7 @@ export default function AddToCartButton({
       ) : (
         <>
           {showIcon && <i className="fa fa-shopping-basket text-xs" />}
-          {children || <span>Add to Cart ({variant})</span>}
+          {children || <span>Add to Cart</span>}
         </>
       )}
     </button>

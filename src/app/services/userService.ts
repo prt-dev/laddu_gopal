@@ -159,12 +159,6 @@ export interface FetchedUserDetails {
     [key: string]: unknown;
 }
 
-/**
- * Fetch devotee / user billing details by phone or email.
- * References backend routes:
- * 1. Checks GET /api/v1/users/details?phone=...&email=...
- * 2. Fallback to GET /api/v1/users/profile if authenticated with token
- */
 export async function fetchUserDetailsByPhoneOrEmail(
     params: { phone?: string; email?: string },
     token?: string | null
@@ -197,7 +191,6 @@ export async function fetchUserDetailsByPhoneOrEmail(
         }
     }
 
-    // 2. Fallback to /users/profile if token is available
     if (token) {
         try {
             const profile = await getUserProfileApi(token);

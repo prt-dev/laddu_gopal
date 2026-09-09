@@ -5,8 +5,8 @@ import { useSearchParams } from "next/navigation";
 import ShopSidebar from "./ShopSidebar";
 import ShopProducts from "./ShopProducts";
 import { CategoryItem } from "./ShopSidebarCategories";
-import { getProducts, ProductItem } from "@/app/services/productService";
-import { getCategories } from "@/app/services/categoryService";
+import { ProductItem } from "@/app/services/productService";
+import { useGeneral } from "@/app/context/GeneralContext";
 import Spinner from "./Spinner";
 import Loading from "@/app/components/common/Loading";
 
@@ -16,44 +16,12 @@ export default function ShopSection() {
   const initialSize = searchParams.get("size") || "";
   const initialQuery = searchParams.get("q") || "";
 
-  const [products, setProducts] = useState<ProductItem[]>([]);
-  const [categoriesList, setCategoriesList] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const { products, categories: categoriesList, isLoading } = useGeneral();
 
   const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory);
   const [selectedSize, setSelectedSize] = useState<string>(initialSize);
   const [searchQuery, setSearchQuery] = useState<string>(initialQuery);
   const [sortBy, setSortBy] = useState<string>("");
-
-  // Fetch products and categories dynamically from API
-  useEffect(() => {
-    let isMounted = true;
-    async function loadData() {
-      try {
-        setIsLoading(true);
-        const [prodRes, catRes] = await Promise.all([
-          getProducts({ limit: 50 }),
-          getCategories({ limit: 50 }),
-        ]);
-
-        if (isMounted) {
-          setProducts(prodRes.products || []);
-          setCategoriesList(catRes.categories || []);
-        }
-      } catch (err) {
-        console.error("Error loading products/categories:", err);
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    }
-
-    loadData();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   // Sync state when URL params change (e.g. from navbar, footer, or explore buttons)
   useEffect(() => {

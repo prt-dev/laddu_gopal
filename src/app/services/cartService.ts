@@ -9,6 +9,7 @@ export interface CartItem {
   quantity?: number;
   price?: number | string;
   product?: ProductItem;
+  products?: any;
   created_at?: string;
   updated_at?: string;
 
@@ -26,66 +27,196 @@ export interface GetCartParams {
   product_id?: number | string;
 }
 
+export const ACTIVE_CART_ID_KEY = "active_cart_id";
+export const CART_ID_KEY = "cart_id";
+
 /**
- * 1. Create Cart Item / Add to Cart
- * Endpoint: POST /api/v1/carts/create
+ * Get stored cart_id from localStorage
  */
-export async function addToCartApi(
-  data: Partial<CartItem>,
-  token?: string
-) {
+export function getStoredCartId(): number | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
+    const val = localStorage.getItem(ACTIVE_CART_ID_KEY) || localStorage.getItem(CART_ID_KEY);
+    if (val && !isNaN(Number(val))) {
+      return Number(val);
+    }
+  } catch { }
+  return undefined;
+}
+
+/**
+ * Set stored cart_id in localStorage and dispatch sync events
+ */
+export function setStoredCartId(cartId: number | string): void {
+  if (typeof window === "undefined") return;
+  try {
+    const numId = Number(cartId);
+    if (!isNaN(numId)) {
+      localStorage.setItem(ACTIVE_CART_ID_KEY, String(numId));
+      localStorage.setItem(CART_ID_KEY, String(numId));
+      window.dispatchEvent(new Event("cart_updated"));
+      window.dispatchEvent(new CustomEvent("cart_id_updated", { detail: numId }));
+    }
+  } catch { }
+}
+
+/**
+ * Remove stored cart_id from localStorage and dispatch sync events
+ */
+export function removeStoredCartId(): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(ACTIVE_CART_ID_KEY);
+    localStorage.removeItem(CART_ID_KEY);
+    window.dispatchEvent(new Event("cart_updated"));
+    window.dispatchEvent(new CustomEvent("cart_id_updated", { detail: undefined }));
+  } catch { }
+}
+
+// ==========================================
+// INTERNAL HELPERS (DRY)
+// ==========================================
+
+/**
+ * Generate standard API request headers
+ */
+function getApiHeaders(token?: string, contentType = "application/json"): Record<string, string> {
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
     Accept: "application/json",
   };
-
+  if (contentType) {
+    headers["Content-Type"] = contentType;
+  }
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
+  return headers;
+}
 
-  const response = await fetch(`${BASE_URL}/carts/create`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(data),
-  });
-
+/**
+ * Common fetch response handler
+ */
+async function handleApiResponse(response: Response, defaultErrorMsg: string) {
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.detail || errorData.message || "Failed to create cart item"
-    );
+    throw new Error(errorData.detail || errorData.message || defaultErrorMsg);
   }
-
   return response.json();
 }
 
+/**
+ * Format cart payload ensuring:
+ * - json data of cartitems (products)
+ * - user id (user_id)
+ * - total amount as price (price)
+ * where each cartitem contains product_id, variant, and quantity
+ */
+export function formatCartPayload(data: {
+  products?: any;
+  cartitems?: any;
+  user_id?: number | string;
+  price?: number | string;
+  product_id?: number | string;
+  variant?: string;
+  size?: string;
+  quantity?: number;
+  [key: string]: any;
+}): { products: string; user_id: number; price: number } {
+  const rawProducts = data.products !== undefined ? data.products : data.cartitems;
+  let productsJson: string;
+
+  if (typeof rawProducts === "string") {
+    productsJson = rawProducts;
+  } else if (Array.isArray(rawProducts)) {
+    const formatted = rawProducts.map((it: any) => ({
+      id: it.id,
+      product_id: it.product_id !== undefined ? it.product_id : it.id,
+      variant: it.variant || it.size || "Standard Size",
+      quantity: Math.max(1, Number(it.quantity) || 1),
+      price: Number(it.price) || 0,
+    }));
+    productsJson = JSON.stringify(formatted);
+  } else if (rawProducts && typeof rawProducts === "object") {
+    productsJson = JSON.stringify([rawProducts]);
+  } else if (data.product_id !== undefined) {
+    productsJson = JSON.stringify([
+      {
+        id: data.id || data.product_id,
+        product_id: data.product_id,
+        variant: data.variant || data.size || "Standard Size",
+        quantity: Math.max(1, Number(data.quantity) || 1),
+        price: Number(data.price) || 0,
+      },
+    ]);
+  } else {
+    productsJson = "[]";
+  }
+
+  return {
+    products: productsJson,
+    user_id: Number(data.user_id),
+    price: Number(data.price || 0),
+  };
+}
+
+/**
+ * Extract numeric cart ID from API response
+ */
+export function extractCartId(res: any): number | undefined {
+  const id =
+    res?.id !== undefined
+      ? res.id
+      : res?.cart_id !== undefined
+        ? res.cart_id
+        : res?.data?.id;
+  if (id !== undefined && id !== null && !isNaN(Number(id))) {
+    return Number(id);
+  }
+  return undefined;
+}
+
+// ==========================================
+// CART API ENDPOINTS
+// ==========================================
+
+/**
+ * 1. Create Cart Item / Add to Cart
+ * Endpoint: POST /api/v1/carts/create
+ * Sends ONLY:
+ * - json data of cartitems (products)
+ * - user id (user_id)
+ * - total amount as price (price)
+ * where each cartitem contains product_id, variant, quantity
+ */
+export async function addToCartApi(
+  data: Partial<CartItem> & { cartitems?: any;[key: string]: any },
+  token?: string
+) {
+  const payload = formatCartPayload(data);
+  const response = await fetch(`${BASE_URL}/carts/create`, {
+    method: "POST",
+    headers: getApiHeaders(token),
+    body: JSON.stringify(payload),
+  });
+
+  const result = await handleApiResponse(response, "Failed to create cart item");
+  const createdId = extractCartId(result);
+  if (createdId) {
+    setStoredCartId(createdId);
+  }
+  return result;
+}
 
 /**
  * 2. Get My Cart (current authenticated user's cart)
  * Endpoint: GET /api/v1/carts/my-cart
  */
 export async function getMyCartApi(token: string) {
-  const headers: Record<string, string> = {
-    Accept: "application/json",
-  };
-
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
   const response = await fetch(`${BASE_URL}/carts/my-cart`, {
     method: "GET",
-    headers,
+    headers: getApiHeaders(token, ""),
   });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.detail || errorData.message || "Failed to fetch user cart"
-    );
-  }
-
-  return response.json();
+  return handleApiResponse(response, "Failed to fetch user cart");
 }
 
 /**
@@ -100,164 +231,168 @@ export async function getAllCartsApi(
   params.append("page", page.toString());
   params.append("limit", limit.toString());
 
-  if (search?.trim()) {
-    params.append("search", search.trim());
-  }
-  if (user_id !== undefined && user_id !== null && user_id !== "") {
-    params.append("user_id", user_id.toString());
-  }
-  if (product_id !== undefined && product_id !== null && product_id !== "") {
-    params.append("product_id", product_id.toString());
-  }
+  if (search?.trim()) params.append("search", search.trim());
+  if (user_id !== undefined && user_id !== null && user_id !== "") params.append("user_id", user_id.toString());
+  if (product_id !== undefined && product_id !== null && product_id !== "") params.append("product_id", product_id.toString());
 
-  const url = `${BASE_URL}/carts/all?${params.toString()}`;
-
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    Accept: "application/json",
-  };
-
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
-  const response = await fetch(url, {
+  const response = await fetch(`${BASE_URL}/carts/all?${params.toString()}`, {
     method: "GET",
-    headers,
+    headers: getApiHeaders(token),
   });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.detail || errorData.message || "Failed to fetch cart items"
-    );
-  }
-
-  return response.json();
+  return handleApiResponse(response, "Failed to fetch cart items");
 }
 
 /**
- * 4. Get Single Cart Item by ID
+ * 4. Get Latest Cart by User ID
+ * Endpoint: GET /api/v1/carts/latest/{user_id}
+ */
+export async function getLatestCartByUserId(
+  userId: number | string,
+  token?: string | null
+): Promise<CartItem | null> {
+  try {
+    const response = await fetch(`${BASE_URL}/carts/latest/${userId}`, {
+      method: "GET",
+      headers: getApiHeaders(token || undefined, ""),
+    });
+    if (!response.ok) return null;
+    return response.json();
+  } catch (err) {
+    console.warn("Could not get latest cart by user_id:", err);
+    return null;
+  }
+}
+
+/**
+ * 5. Get Single Cart Item by ID
  * Endpoint: GET /api/v1/carts/{cart_id}
  */
 export async function getCartItemById(
   cartId: number | string,
   token?: string
 ) {
-  const headers: Record<string, string> = {
-    Accept: "application/json",
-  };
-
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
   const response = await fetch(`${BASE_URL}/carts/${cartId}`, {
     method: "GET",
-    headers,
+    headers: getApiHeaders(token, ""),
   });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.detail || errorData.message || "Failed to fetch cart item"
-    );
-  }
-
-  return response.json();
+  return handleApiResponse(response, "Failed to fetch cart item");
 }
 
 /**
- * 5. Update Cart Item
+ * 6. Update Cart Item
  * Endpoint: PUT /api/v1/carts/{cart_id}
+ * Sends ONLY:
+ * - json data of cartitems (products)
+ * - user id (user_id)
+ * - total amount as price (price)
+ * where each cartitem contains product_id, variant, quantity
  */
 export async function updateCartItemApi(
   cartId: number | string,
-  data: Partial<CartItem>,
+  data: Partial<CartItem> & { cartitems?: any;[key: string]: any },
   token?: string
 ) {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    Accept: "application/json",
-  };
-
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
+  const payload = formatCartPayload(data);
   const response = await fetch(`${BASE_URL}/carts/${cartId}`, {
     method: "PUT",
-    headers,
-    body: JSON.stringify(data),
+    headers: getApiHeaders(token),
+    body: JSON.stringify(payload),
   });
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.detail || errorData.message || "Failed to update cart item"
-    );
+  const result = await handleApiResponse(response, "Failed to update cart item");
+  const updatedId = extractCartId(result) || (Number(cartId) < 100000000000 ? Number(cartId) : undefined);
+  if (updatedId) {
+    setStoredCartId(updatedId);
   }
-
-  return response.json();
+  return result;
 }
 
 /**
- * 6. Delete Single Cart Item
+ * 7. Create or Update Cart
+ * If cart_id or id is provided, updates via PUT /api/v1/carts/{cart_id}
+ * Otherwise creates via POST /api/v1/carts/create
+ * Automatically sets cartId on success
+ */
+export async function createOrUpdateCartApi(
+  data: Partial<CartItem> & {
+    cart_id?: number | string;
+    id?: number | string;
+    products?: any;
+    cartitems?: any;
+    user_id?: number | string;
+    price?: number | string;
+    [key: string]: any;
+  },
+  token?: string | null
+): Promise<CartItem> {
+  const targetCartId = data.cart_id || data.id;
+
+  if (targetCartId && !isNaN(Number(targetCartId)) && Number(targetCartId) < 100000000000) {
+    try {
+      return await updateCartItemApi(targetCartId, data, token || undefined);
+    } catch (err) {
+      console.warn("Update cart item failed, falling back to create:", err);
+      return null;
+    }
+  }
+
+  return await addToCartApi(data, token || undefined);
+}
+
+/**
+ * 8. Sync Entire Cart Items List to Server
+ * Calculates total amount, formats products with product_id, variant, and quantity,
+ * and sends only required fields to create or update cart on server.
+ */
+export async function syncCartToServer(
+  items: CartItem[],
+  userId?: number | string,
+  cartId?: number | string,
+  token?: string | null
+): Promise<CartItem | null> {
+  if (!userId || isNaN(Number(userId))) return null;
+  const numPrice = items.reduce(
+    (sum, it) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 1),
+    0
+  );
+  return createOrUpdateCartApi(
+    {
+      cart_id: cartId,
+      products: items,
+      user_id: Number(userId),
+      price: Number(numPrice.toFixed(2)),
+    },
+    token || null
+  );
+}
+
+/**
+ * 9. Delete Single Cart Item
  * Endpoint: DELETE /api/v1/carts/{cart_id}
  */
 export async function deleteCartItemApi(
   cartId: number | string,
   token?: string
 ) {
-  const headers: Record<string, string> = {
-    Accept: "application/json",
-  };
-
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
   const response = await fetch(`${BASE_URL}/carts/${cartId}`, {
     method: "DELETE",
-    headers,
+    headers: getApiHeaders(token, ""),
   });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.detail || errorData.message || "Failed to delete cart item"
-    );
-  }
-
-  return response.json();
+  return handleApiResponse(response, "Failed to delete cart item");
 }
 
 /**
- * 7. Clear My Cart
+ * 9. Clear My Cart
  * Endpoint: DELETE /api/v1/carts/clear
  */
 export async function clearMyCartApi(token?: string) {
-  const headers: Record<string, string> = {
-    Accept: "application/json",
-  };
-
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
   const response = await fetch(`${BASE_URL}/carts/clear`, {
     method: "DELETE",
-    headers,
+    headers: getApiHeaders(token, ""),
   });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.detail || errorData.message || "Failed to clear cart"
-    );
-  }
-
-  return response.json();
+  const result = await handleApiResponse(response, "Failed to clear cart");
+  removeStoredCartId();
+  return result;
 }
 
 // ==========================================

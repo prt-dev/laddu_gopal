@@ -1,37 +1,22 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import ProductCard from "./ProductCard";
-import { getProducts, ProductItem } from "@/app/services/productService";
+import { useGeneral } from "@/app/context/GeneralContext";
 
 interface RelatedProductsProps {
   currentId?: number | string;
 }
 
 export default function RelatedProducts({ currentId = 1 }: RelatedProductsProps) {
-  const [related, setRelated] = useState<ProductItem[]>([]);
+  const { products } = useGeneral();
   const [selectedSizes, setSelectedSizes] = useState<{ [key: number]: string }>({});
 
   const numericCurrentId = typeof currentId === "string" ? parseInt(currentId, 10) : currentId;
 
-  useEffect(() => {
-    let isMounted = true;
-    async function loadRelated() {
-      try {
-        const res = await getProducts({ limit: 10 });
-        if (isMounted) {
-          const filtered = res.products.filter((p) => p.id !== numericCurrentId).slice(0, 3);
-          setRelated(filtered);
-        }
-      } catch (err) {
-        console.error("Error loading related products:", err);
-      }
-    }
-    loadRelated();
-    return () => {
-      isMounted = false;
-    };
-  }, [numericCurrentId]);
+  const related = useMemo(() => {
+    return products.filter((p) => p.id !== numericCurrentId).slice(0, 3);
+  }, [products, numericCurrentId]);
 
   const handleSelectSize = (productId: number, size: string) => {
     setSelectedSizes((prev) => ({

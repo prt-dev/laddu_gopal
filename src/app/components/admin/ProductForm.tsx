@@ -20,6 +20,11 @@ interface ProductFormProps {
   mode?: "add" | "edit";
 }
 
+export interface VariantPriceItem {
+  name: string;
+  price: string;
+}
+
 const DEFAULT_VARIANT_OPTIONS: string[] = [
   "Size 0",
   "Size 1",
@@ -64,9 +69,11 @@ export default function ProductForm({ productId, mode }: ProductFormProps) {
     description: "",
   });
 
-  const [selectedVariants, setSelectedVariants] = useState<string[]>([]);
+  const [variantItems, setVariantItems] = useState<VariantPriceItem[]>([]);
   const [availableVariants, setAvailableVariants] = useState<string[]>(DEFAULT_VARIANT_OPTIONS);
   const [customVariantInput, setCustomVariantInput] = useState<string>("");
+  const [customVariantPriceInput, setCustomVariantPriceInput] = useState<string>("");
+  const [variantStepPrice, setVariantStepPrice] = useState<string>("20");
 
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -127,24 +134,73 @@ export default function ProductForm({ productId, mode }: ProductFormProps) {
             description: data.description || "",
           });
 
-          const rawVariant = typeof data.variant === "string" ? data.variant.trim() : "";
+          let parsedVariantItems: VariantPriceItem[] = [];
+          const rawVariant = data.variant;
 
-          let parsedVariants: string[] = [];
           if (rawVariant) {
-            if (rawVariant.startsWith("[") && rawVariant.endsWith("]")) {
-              try {
-                parsedVariants = JSON.parse(rawVariant);
-              } catch {
-                parsedVariants = rawVariant.split(/[,;]/).map((s: string) => s.trim()).filter(Boolean);
+            if (typeof rawVariant === "object" && !Array.isArray(rawVariant)) {
+              parsedVariantItems = Object.entries(rawVariant).map(([name, price], idx) => ({
+                name: String(name).trim(),
+                price:
+                  price !== undefined && price !== null && String(price).trim() !== ""
+                    ? String(price)
+                    : String(Number(data.price || 0) + idx * 20),
+              }));
+            } else if (typeof rawVariant === "string") {
+              const trimmed = rawVariant.trim();
+              if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+                try {
+                  const parsed = JSON.parse(trimmed);
+                  if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
+                    parsedVariantItems = Object.entries(parsed).map(([name, price], idx) => ({
+                      name: String(name).trim(),
+                      price:
+                        price !== undefined && price !== null && String(price).trim() !== ""
+                          ? String(price)
+                          : String(Number(data.price || 0) + idx * 20),
+                    }));
+                  }
+                } catch {
+                  // ignore JSON parse failure and fallback below
+                }
+              } else if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+                try {
+                  const parsed = JSON.parse(trimmed);
+                  if (Array.isArray(parsed)) {
+                    parsedVariantItems = parsed.map((item: any, idx: number) => {
+                      const defPrice = String(Number(data.price || 0) + idx * 20);
+                      if (typeof item === "object" && item !== null && item.name) {
+                        return {
+                          name: String(item.name).trim(),
+                          price: String(item.price || defPrice),
+                        };
+                      }
+                      return { name: String(item).trim(), price: defPrice };
+                    });
+                  }
+                } catch {
+                  // ignore JSON parse failure and fallback below
+                }
               }
-            } else {
-              parsedVariants = rawVariant.split(/[,;]/).map((s: string) => s.trim()).filter(Boolean);
+
+              if (parsedVariantItems.length === 0 && trimmed) {
+                parsedVariantItems = trimmed
+                  .split(/[,;]/)
+                  .map((s: string) => s.trim())
+                  .filter(Boolean)
+                  .map((name, idx) => ({
+                    name,
+                    price: String(Number(data.price || 0) + idx * 20),
+                  }));
+              }
             }
           }
 
-          setSelectedVariants(parsedVariants);
-          if (parsedVariants.length > 0) {
-            setAvailableVariants((prev) => Array.from(new Set([...prev, ...parsedVariants])));
+          setVariantItems(parsedVariantItems);
+          if (parsedVariantItems.length > 0) {
+            setAvailableVariants((prev) =>
+              Array.from(new Set([...prev, ...parsedVariantItems.map((v) => v.name)]))
+            );
           }
 
           if (data.image_url) {
@@ -183,19 +239,61 @@ export default function ProductForm({ productId, mode }: ProductFormProps) {
     }));
   };
 
-  const toggleVariant = (variant: string) => {
-    setSelectedVariants((prev) =>
-      prev.includes(variant) ? prev.filter((v) => v !== variant) : [...prev, variant]
+  const selectedVariantNames = variantItems.map((v) => v.name);
+
+  const getDefaultVariantPrice = (
+    index: number = 0,
+    basePriceStr?: string | number,
+    stepStr?: string | number
+  ): string => {
+    const raw = basePriceStr !== undefined ? basePriceStr : formData.price;
+    const num = parseFloat(String(raw || "0"));
+    const safeBase = isNaN(num) ? 0 : num;
+
+    const rawStep = stepStr !== undefined ? stepStr : variantStepPrice;
+    const stepNum = parseFloat(String(rawStep || "20"));
+    const safeStep = isNaN(stepNum) ? 20 : stepNum;
+
+    return String(safeBase + index * safeStep);
+  };
+
+  const toggleVariant = (variantName: string) => {
+    setVariantItems((prev) => {
+      const exists = prev.some((v) => v.name.toLowerCase() === variantName.toLowerCase());
+      if (exists) {
+        return prev.filter((v) => v.name.toLowerCase() !== variantName.toLowerCase());
+      } else {
+        const nextIndex = prev.length;
+        return [...prev, { name: variantName, price: getDefaultVariantPrice(nextIndex) }];
+      }
+    });
+  };
+
+  const handleRemoveVariant = (variantNameToRemove: string) => {
+    setVariantItems((prev) => prev.filter((v) => v.name !== variantNameToRemove));
+  };
+
+  const handleUpdateVariantPrice = (variantName: string, newPrice: string) => {
+    setVariantItems((prev) =>
+      prev.map((v) => (v.name === variantName ? { ...v, price: newPrice } : v))
     );
   };
 
-  const handleRemoveVariant = (variantToRemove: string) => {
-    setSelectedVariants((prev) => prev.filter((v) => v !== variantToRemove));
-  };
   const handleSelectPreset = (preset: "common_sizes" | "all_sizes" | "clear") => {
     if (preset === "common_sizes") {
       const common = ["Size 0", "Size 1", "Size 2", "Size 3", "Size 4", "Size 5", "Size 6"];
-      setSelectedVariants((prev) => Array.from(new Set([...prev, ...common])));
+      setVariantItems((prev) => {
+        const existingNames = new Set(prev.map((v) => v.name.toLowerCase()));
+        let currentIndex = prev.length;
+        const toAdd: VariantPriceItem[] = [];
+        for (const name of common) {
+          if (!existingNames.has(name.toLowerCase())) {
+            toAdd.push({ name, price: getDefaultVariantPrice(currentIndex) });
+            currentIndex++;
+          }
+        }
+        return [...prev, ...toAdd];
+      });
     } else if (preset === "all_sizes") {
       const allSizes = [
         "Size 0",
@@ -212,10 +310,27 @@ export default function ProductForm({ productId, mode }: ProductFormProps) {
         "Size 11",
         "Size 12",
       ];
-      setSelectedVariants((prev) => Array.from(new Set([...prev, ...allSizes])));
+      setVariantItems((prev) => {
+        const existingNames = new Set(prev.map((v) => v.name.toLowerCase()));
+        let currentIndex = prev.length;
+        const toAdd: VariantPriceItem[] = [];
+        for (const name of allSizes) {
+          if (!existingNames.has(name.toLowerCase())) {
+            toAdd.push({ name, price: getDefaultVariantPrice(currentIndex) });
+            currentIndex++;
+          }
+        }
+        return [...prev, ...toAdd];
+      });
     } else if (preset === "clear") {
-      setSelectedVariants([]);
+      setVariantItems([]);
     }
+  };
+
+  const handleApplyBasePriceToAllVariants = () => {
+    setVariantItems((prev) =>
+      prev.map((v, idx) => ({ ...v, price: getDefaultVariantPrice(idx) }))
+    );
   };
 
   const handleAddCustomVariant = (e?: React.FormEvent) => {
@@ -229,8 +344,21 @@ export default function ProductForm({ productId, mode }: ProductFormProps) {
 
     if (newItems.length > 0) {
       setAvailableVariants((prev) => Array.from(new Set([...prev, ...newItems])));
-      setSelectedVariants((prev) => Array.from(new Set([...prev, ...newItems])));
+      setVariantItems((prev) => {
+        const existingNames = new Set(prev.map((v) => v.name.toLowerCase()));
+        let currentIndex = prev.length;
+        const toAdd: VariantPriceItem[] = [];
+        for (const name of newItems) {
+          if (!existingNames.has(name.toLowerCase())) {
+            const priceToUse = customVariantPriceInput.trim() || getDefaultVariantPrice(currentIndex);
+            toAdd.push({ name, price: priceToUse });
+            currentIndex++;
+          }
+        }
+        return [...prev, ...toAdd];
+      });
       setCustomVariantInput("");
+      setCustomVariantPriceInput("");
     }
   };
 
@@ -303,7 +431,24 @@ export default function ProductForm({ productId, mode }: ProductFormProps) {
 
       setUploadProgress(isEdit ? "Updating product..." : "Creating product...");
 
-      const variantString = selectedVariants.join(", ");
+      // Prepare variant as JSON object of { [variant]: price }
+      let variantString: string | undefined = undefined;
+      if (variantItems.length > 0) {
+        const variantMap: Record<string, number> = {};
+        const baseNum = priceNum >= 0 ? priceNum : 0;
+        const stepNum = parseFloat(String(variantStepPrice || "20"));
+        const safeStep = isNaN(stepNum) ? 20 : stepNum;
+
+        variantItems.forEach((item, idx) => {
+          const name = item.name.trim();
+          if (!name) return;
+          const parsed = parseFloat(String(item.price));
+          variantMap[name] =
+            !isNaN(parsed) && parsed >= 0 ? parsed : baseNum + idx * safeStep;
+        });
+
+        variantString = JSON.stringify(variantMap);
+      }
 
       const payload: Partial<ProductItem> = {
         name: formData.name.trim(),
@@ -547,13 +692,13 @@ export default function ProductForm({ productId, mode }: ProductFormProps) {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-                  Product Variants / Sizes
+                  Product Variants & Pricing
                   <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300">
-                    {selectedVariants.length} selected
+                    {variantItems.length} configured
                   </span>
                 </span>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                  Select Deity sizes and variants available for this item
+                  Assign individual prices for each deity size/variant.
                 </p>
               </div>
 
@@ -562,22 +707,22 @@ export default function ProductForm({ productId, mode }: ProductFormProps) {
                 <button
                   type="button"
                   onClick={() => handleSelectPreset("common_sizes")}
-                  className="px-2.5 py-1 rounded-md bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-400 transition-colors shadow-xs"
+                  className="px-2.5 py-1 rounded-md bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-400 transition-colors shadow-xs cursor-pointer"
                 >
                   + Common Sizes (0–6)
                 </button>
                 <button
                   type="button"
                   onClick={() => handleSelectPreset("all_sizes")}
-                  className="px-2.5 py-1 rounded-md bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-400 transition-colors shadow-xs"
+                  className="px-2.5 py-1 rounded-md bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-400 transition-colors shadow-xs cursor-pointer"
                 >
                   + All Sizes (0–12)
                 </button>
-                {selectedVariants.length > 0 && (
+                {variantItems.length > 0 && (
                   <button
                     type="button"
                     onClick={() => handleSelectPreset("clear")}
-                    className="px-2.5 py-1 rounded-md bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-100 transition-colors"
+                    className="px-2.5 py-1 rounded-md bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-100 transition-colors cursor-pointer"
                   >
                     Clear All
                   </button>
@@ -585,51 +730,142 @@ export default function ProductForm({ productId, mode }: ProductFormProps) {
               </div>
             </div>
 
-            {/* Selected Variant Tags Display */}
-            <div>
-              <span className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                Currently Selected:
-              </span>
-              <div className="p-3 bg-white dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-600 min-h-[46px] flex flex-wrap items-center gap-1.5">
-                {selectedVariants.length === 0 ? (
-                  <span className="text-xs text-gray-400 dark:text-gray-500 italic">
-                    No variants selected yet. Click any of the Quick Toggle options below or use the quick buttons.
-                  </span>
-                ) : (
-                  selectedVariants.map((variant) => (
-                    <span
-                      key={variant}
-                      className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/60 dark:text-purple-200 border border-purple-200 dark:border-purple-700/50 shadow-xs"
-                    >
-                      {variant}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveVariant(variant)}
-                        className="ml-1.5 text-purple-600 hover:text-purple-900 dark:text-purple-300 dark:hover:text-white font-bold focus:outline-none"
-                        title={`Remove ${variant}`}
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))
+            {/* Auto-Pricing Formula & Step Input Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-purple-200 dark:border-purple-800/60 shadow-xs">
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Base Price input */}
+                <div className="flex items-center gap-1.5">
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                    Base Price:
+                  </label>
+                  <div className="relative w-24">
+                    <input
+                      type="text"
+                      min="0"
+                      step="any"
+                      name="price"
+                      value={formData.price}
+                      onChange={handleChange}
+                      placeholder="0.00"
+                      className="w-full text-xs pl-5 pr-2 py-1.5 rounded-md border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 font-medium focus:outline-none focus:ring-1 focus:ring-purple-500"
+                      title="Product base price used in variant formula"
+                    />
+                  </div>
+                </div>
+
+                <span className="text-gray-400 font-bold text-xs">+</span>
+
+                {/* Step / Increment input (defaults to 20) */}
+                <div className="flex items-center gap-1.5">
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                    Step Amt.:
+                  </label>
+                  <div className="relative w-24">
+                    <input
+                      type="number"
+                      min="0"
+                      step="any"
+                      value={variantStepPrice}
+                      onChange={(e) => setVariantStepPrice(e.target.value)}
+                      placeholder="20"
+                      className="w-full text-xs pl-5 pr-2 py-1.5 rounded-md border border-purple-300 dark:border-purple-600 bg-purple-50/50 dark:bg-gray-700 text-purple-900 dark:text-purple-200 font-bold focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      title="Price step added per variant index: formData.price + (i + 1) * step"
+                    />
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2">
+                {variantItems.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleApplyBasePriceToAllVariants}
+                    className="px-3 py-1.5 rounded-md bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium transition-colors shadow-xs cursor-pointer flex items-center gap-1"
+                    title="Recalculate all variant prices"
+                  >
+                    <span>Apply to All</span>
+                  </button>
                 )}
               </div>
             </div>
 
+            {/* Configured Variants with Individual Price Inputs */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
+                  Configured Variants & Prices ({variantItems.length}):
+                </span>
+              </div>
+
+              {variantItems.length === 0 ? (
+                <div className="p-4 bg-white dark:bg-gray-800 rounded-md border border-dashed border-gray-300 dark:border-gray-600 text-center">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    No variants configured yet. Click any of the Quick Toggle options below or use the preset buttons to assign sizes & prices.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-72 overflow-y-auto p-3 bg-white dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-600">
+                  {variantItems.map((item, index) => (
+                    <div
+                      key={item.name}
+                      className="flex items-center justify-between gap-2 p-2 rounded-lg bg-gray-50 dark:bg-gray-700/60 border border-gray-200 dark:border-gray-600 hover:border-purple-300 dark:hover:border-purple-500 transition-all shadow-xs"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <span className="block text-xs font-bold text-gray-800 dark:text-gray-200 truncate" title={item.name}>
+                          {item.name}
+                        </span>
+                        <span className="text-[10px] text-gray-500 dark:text-gray-400">
+                          {item.price ? `₹${item.price}` : `Default: ₹${getDefaultVariantPrice(index)}`}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <div className="relative w-24">
+                          <input
+                            type="text"
+                            min="0"
+                            step="any"
+                            value={item.price}
+                            onChange={(e) => handleUpdateVariantPrice(item.name, e.target.value)}
+                            placeholder={getDefaultVariantPrice(index)}
+                            className="w-full text-xs pl-5 pr-1.5 py-1 rounded border border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                          />
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveVariant(item.name)}
+                          className="text-gray-400 hover:text-red-500 dark:hover:text-red-400 p-1 rounded transition-colors cursor-pointer"
+                          title={`Remove ${item.name}`}
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+
             {/* Quick Toggle Options for Multiple Selection */}
             <div>
               <span className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Quick Toggle Options (click to select or deselect multiple):
+                Quick Toggle Sizes / Colors (click to add or remove):
               </span>
               <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-3 bg-white dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-600">
                 {availableVariants.map((variant) => {
-                  const isSelected = selectedVariants.includes(variant);
+                  const isSelected = selectedVariantNames.includes(variant);
                   return (
                     <button
                       key={variant}
                       type="button"
                       onClick={() => toggleVariant(variant)}
-                      className={`px-2.5 py-1 rounded text-xs font-medium border transition-all cursor-pointer ${isSelected
+                      className={`px-2 py-1 rounded text-xs font-medium border transition-all cursor-pointer ${isSelected
                         ? "bg-purple-600 text-white border-purple-600 dark:bg-purple-500 shadow-xs"
                         : "bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:border-purple-300 dark:hover:border-purple-500"
                         }`}
@@ -644,9 +880,9 @@ export default function ProductForm({ productId, mode }: ProductFormProps) {
             {/* Custom Variant Adder */}
             <div className="pt-2 border-t border-gray-200 dark:border-gray-600">
               <span className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                Add Custom Variant:
+                Add Custom Variant with Price:
               </span>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <input
                   type="text"
                   value={customVariantInput}
@@ -657,15 +893,26 @@ export default function ProductForm({ productId, mode }: ProductFormProps) {
                       handleAddCustomVariant();
                     }
                   }}
-                  placeholder="e.g. Size 00, Heavy Embroidery, Yellow & Green Silk (comma-separated)..."
+                  placeholder="Variant name (e.g. Size 00, Heavy Embroidery, Yellow & Green Silk)..."
                   className="flex-1 text-xs dark:border-gray-600 dark:bg-gray-800 focus:border-purple-400 focus:outline-none focus:ring-1 focus:ring-purple-400 dark:text-gray-300 py-2 px-3 border border-gray-300 rounded-md"
                 />
+                <div className="relative w-full sm:w-32">
+                  <input
+                    type="text"
+                    min="0"
+                    step="any"
+                    value={customVariantPriceInput}
+                    onChange={(e) => setCustomVariantPriceInput(e.target.value)}
+                    placeholder={getDefaultVariantPrice(variantItems.length)}
+                    className="w-full text-xs pl-6 pr-2 py-2 rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-purple-400"
+                  />
+                </div>
                 <button
                   type="button"
                   onClick={() => handleAddCustomVariant()}
-                  className="px-3.5 py-2 text-xs font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-md transition-colors whitespace-nowrap shadow-xs"
+                  className="px-3.5 py-2 text-xs font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-md transition-colors whitespace-nowrap shadow-xs cursor-pointer"
                 >
-                  + Add Option
+                  + Add Variant
                 </button>
               </div>
             </div>
