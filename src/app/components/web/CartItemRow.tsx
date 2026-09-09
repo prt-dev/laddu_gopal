@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { CartItem } from "@/app/services/cartService";
+import { CartItem, parseItemPrice } from "@/app/services/cartService";
 
 export type { CartItem as CartItemType };
 
@@ -16,15 +16,12 @@ export default function CartItemRow({
   onUpdateQuantity,
   onRemove,
 }: CartItemRowProps) {
-  const itemId = item.id ?? item.product_id ?? 0;
-  const itemImg = item.img || item.product?.img || item.product?.image_url || "/assets/best-selling.png";
-  const itemName = item.name || item.product?.name || "Sacred Item";
-  const itemPrice =
-    typeof item.price === "number"
-      ? item.price
-      : parseFloat(String(item.price || "0").replace(/[^0-9.]/g, "")) || 0;
+  const itemId = item.product_id ?? 0;
+  const itemImg = item.img || item.image_url || "/assets/best-selling.png";
+  const itemName = item.name || "Sacred Item";
+  const itemPrice = parseItemPrice(item.price);
   const itemQty = Number(item.quantity) || 1;
-  const itemSize = item.variant || item.size;
+  const itemSize = item.variant;
 
   return (
     <tr className="hover:bg-[#fff0ad]/20 transition">

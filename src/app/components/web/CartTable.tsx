@@ -6,6 +6,7 @@ import Link from "next/link";
 import CartItemRow from "./CartItemRow";
 import { useCart } from "@/app/context/CartContext";
 import { getProductById } from "@/app/services/productService";
+import { parseItemPrice } from "@/app/services/cartService";
 import Loading from "@/app/components/common/Loading";
 
 export default function CartTable() {
@@ -24,19 +25,17 @@ export default function CartTable() {
       getProductById(Number(urlItemId))
         .then((found) => {
           if (found) {
-            const foundPrice =
-              typeof found.price === "number"
-                ? found.price
-                : parseFloat(String(found.price).replace(/[^0-9.]/g, "")) || 0;
+            const foundPrice = parseItemPrice(found.price);
             const defaultSize = (found.sizes && found.sizes[0]) || "Size 0";
             addToCart({
+              ...found,
               product_id: found.id || Number(urlItemId),
               variant: urlSize || defaultSize,
               price: foundPrice,
               quantity: 1,
               name: found.name,
               img: found.img || found.image_url,
-              product: found,
+              image_url: found.image_url || found.img,
             });
             // Clean up the URL parameter without page reload
             router.replace("/cart");
@@ -100,7 +99,7 @@ export default function CartTable() {
           <tbody className="divide-y divide-[#fff0ad] text-xs sm:text-sm text-black">
             {items.map((item) => (
               <CartItemRow
-                key={`${item.id}-${item.variant || item.size || ""}`}
+                key={`${item.product_id}-${item.variant || ""}`}
                 item={item}
                 onUpdateQuantity={updateQuantity}
                 onRemove={removeFromCart}

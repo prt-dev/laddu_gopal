@@ -22,6 +22,17 @@ export function getFullImageUrl(url?: string | null): string {
         return trimmed;
     }
 
+    // If local static asset from public folder (e.g. /assets/..., /images/...)
+    if (
+        trimmed.startsWith("/assets/") ||
+        trimmed.startsWith("/images/") ||
+        trimmed.startsWith("assets/") ||
+        trimmed.startsWith("images/") ||
+        trimmed.startsWith("/favicon")
+    ) {
+        return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+    }
+
     // Prepend backend URL (e.g., http://127.0.0.1:8000/uploads/products/...)
     return `${BACKEND_URL}${trimmed.startsWith("/") ? "" : "/"}${trimmed}`;
 }

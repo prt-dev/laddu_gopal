@@ -43,7 +43,7 @@ export default function ProductTable({ data, onEdit, onDelete }: ProductTablePro
 
                 return (
                   <tr key={product.id || idx} className="text-gray-700 dark:text-gray-400">
-                    <td className="px-4 py-3 text-sm">{data.length - idx}</td>
+                    <td className="px-4 py-3 text-sm font-medium">{idx + 1}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center text-sm">
                         <div className="relative hidden w-9 h-9 mr-3 rounded-md md:block overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0">

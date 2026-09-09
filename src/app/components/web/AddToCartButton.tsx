@@ -51,13 +51,14 @@ export default function AddToCartButton({
 
     try {
       await addToCart({
+        ...(product ? (product as any) : {}),
         product_id: productId,
         variant: variant || "Standard Size",
         price,
         quantity,
         name: product?.name,
         img: product?.img || product?.image_url,
-        product: product as any,
+        image_url: product?.image_url || product?.img,
       });
 
       setAddStatus("success");

@@ -31,6 +31,8 @@ import {
   removeStoredCartId,
   syncCartToServer,
   extractCartId,
+  extractBackendCartItems,
+  normalizeCartItem,
 } from "@/app/services/cartService";
 import { useWebAuth } from "@/app/context/WebAuthContext";
 import { getProductById, ProductItem } from "@/app/services/productService";
@@ -52,29 +54,19 @@ interface CartContextType {
   removeFromCart: (id: number | string, variant?: string) => Promise<void>;
   clearCart: () => Promise<void>;
   refreshCart: () => Promise<void>;
-  getLatestCartByUserId: (userId?: number | string) => Promise<CartItem | null>;
-  createOrUpdateCart: (userIdOverride?: number | string) => Promise<CartItem | null>;
-  createOrUpdateCard: (userIdOverride?: number | string) => Promise<CartItem | null>;
+  getLatestCartByUserId: (userId?: number | string) => Promise<any>;
+  createOrUpdateCart: (userIdOverride?: number | string) => Promise<any>;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-// Helper to get devotee/customer user ID directly from localStorage
+// Helper to get devotee/customer user ID directly from localStorage (single user storage key)
 export function getDevoteeUserId(): number | undefined {
   if (typeof window === "undefined") return undefined;
   try {
-    const directId = localStorage.getItem("devotee_user_id");
-    if (directId && !isNaN(Number(directId))) return Number(directId);
-
-    const devotee = localStorage.getItem("devotee_user");
-    if (devotee) {
-      const parsed = JSON.parse(devotee);
-      if (parsed?.id && !isNaN(Number(parsed.id))) return Number(parsed.id);
-    }
-
-    const customer = localStorage.getItem("web_customer_user");
-    if (customer) {
-      const parsed = JSON.parse(customer);
+    const raw = localStorage.getItem("web_customer_user");
+    if (raw) {
+      const parsed = JSON.parse(raw);
       if (parsed?.id && !isNaN(Number(parsed.id))) return Number(parsed.id);
     }
   } catch { }
@@ -85,7 +77,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const { token, isAuthenticated, user } = useWebAuth();
   const [items, setItems] = useState<CartItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [activeCartId, setActiveCartId] = useState<number | undefined>(() => getStoredCartId());
+  const [cartId, setCartId] = useState<number | undefined>(() => getStoredCartId());
+
+  // Synchronizes cartId state and localStorage in a single place
+  const updateCartId = useCallback((id: number | undefined) => {
+    setCartId(id);
+    if (id) {
+      setStoredCartId(id);
+    } else {
+      removeStoredCartId();
+    }
+  }, []);
 
   // Resolve user_id directly from parameter, user object, or fetched devotee stored in localStorage
   const getEffectiveUserId = useCallback(
@@ -115,14 +117,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setItems(updated);
       const storedId = getStoredCartId();
       if (storedId) {
-        setActiveCartId(storedId);
+        setCartId(storedId);
       }
     };
 
     const handleCartIdUpdate = (e: Event) => {
       const customDetail = (e as CustomEvent)?.detail;
       const cid = customDetail && !isNaN(Number(customDetail)) ? Number(customDetail) : getStoredCartId();
-      setActiveCartId(cid);
+      setCartId(cid);
     };
 
     window.addEventListener("cart_updated", handleCartUpdate);
@@ -149,65 +151,39 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
         const latestCart = await fetchLatestCartByUserIdApi(targetUserId, token || null);
 
-        if (latestCart && latestCart.id && !isNaN(Number(latestCart.id))) {
+        const foundCartId = extractCartId(latestCart);
+        if (foundCartId) {
           if (latestCart.status !== undefined && latestCart.status !== null && Number(latestCart.status) !== 1) {
             return;
           }
-          const parsedId = Number(latestCart.id);
-          setActiveCartId(parsedId);
-          setStoredCartId(parsedId);
+          updateCartId(foundCartId);
         }
 
-        // Extract items from latestCart: unpacked from products JSON, or single item / list
-        let backendList: CartItem[] = [];
+        // Extract items from latestCart using pure helper
+        const backendList = extractBackendCartItems(latestCart);
 
-        if (latestCart && (latestCart as any).products) {
-          try {
-            const rawProds = (latestCart as any).products;
-            const parsed = typeof rawProds === "string" ? JSON.parse(rawProds) : rawProds;
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              backendList = parsed;
-            }
-          } catch (e) {
-            console.warn("Could not parse products JSON from latest cart:", e);
-          }
-        }
-
-        if (backendList.length === 0 && latestCart) {
-          if (Array.isArray(latestCart)) {
-            backendList = latestCart;
-          } else if ((latestCart as any).items && Array.isArray((latestCart as any).items)) {
-            backendList = (latestCart as any).items;
-          } else if ((latestCart as any).carts && Array.isArray((latestCart as any).carts)) {
-            backendList = (latestCart as any).carts;
-          } else if (latestCart.id || latestCart.product_id) {
-            backendList = [latestCart];
-          }
-        }
-
-        if (backendList && backendList.length > 0) {
+        if (backendList.length > 0) {
+          const currentLocal = getLocalCart();
           const mappedItems: CartItem[] = await Promise.all(
             backendList.map(async (c: CartItem) => {
-              const localProd = c.product_id
-                ? await getProductById(c.product_id)
-                : null;
-              return {
+              const existingMatch = currentLocal.find(
+                (loc) => String(loc.product_id) === String(c.product_id)
+              );
+              let localProd = existingMatch || null;
+
+              if (!localProd && c.product_id) {
+                try {
+                  localProd = (await getProductById(c.product_id)) as any;
+                } catch {
+                  localProd = null;
+                }
+              }
+
+              return normalizeCartItem({
+                ...(localProd || {}),
                 ...c,
-                id: c.id,
-                product_id: c.product_id,
-                name: c.name || localProd?.name || c.product?.name,
-                variant: c.variant || c.size || "Standard Size",
-                size: c.variant || c.size || "Standard Size",
-                price: Number(c.price || (localProd as any)?.discount_price || localProd?.price || 0),
-                quantity: Number(c.quantity || 1),
-                img:
-                  c.img ||
-                  localProd?.image_url ||
-                  localProd?.img ||
-                  c.product?.image_url ||
-                  "/assets/best-selling.png",
-                product: localProd || c.product,
-              };
+                price: c.price || (localProd as any)?.price || 0,
+              });
             })
           );
 
@@ -217,7 +193,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           // If backend cart is empty but local cart has items, sync local items to backend
           const localItems = getLocalCart();
           if (localItems.length > 0) {
-            await syncCartToServer(localItems, targetUserId, activeCartId, token).catch((e) =>
+            await syncCartToServer(localItems, targetUserId, cartId, token).catch((e) =>
               console.warn("Sync local cart to API failed:", e)
             );
           }
@@ -226,7 +202,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         console.warn("Backend cart sync fallback to local storage:", err);
       }
     },
-    [getEffectiveUserId, token, activeCartId]
+    [getEffectiveUserId, token, cartId, updateCartId]
   );
 
   // Sync with backend whenever an effective user ID is available
@@ -259,40 +235,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setItems(updatedItems);
       const uid = getEffectiveUserId();
       if (uid) {
-        await syncCartToServer(updatedItems, uid, activeCartId, token).catch((err) =>
+        await syncCartToServer(updatedItems, uid, cartId, token).catch((err) =>
           console.warn("CartContext: syncUpdatedCart error:", err)
         );
       }
     },
-    [getEffectiveUserId, activeCartId, token]
+    [getEffectiveUserId, cartId, token]
   );
 
   // Add to cart method
   const addToCart = useCallback(
     async (payload: Partial<CartItem>) => {
-      const prodId = payload.product_id !== undefined ? payload.product_id : payload.id;
-      const numPrice =
-        typeof payload.price === "number"
-          ? payload.price
-          : parseFloat(String(payload.price || 0).replace(/[^0-9.]/g, "")) || 0;
-
-      const updated = addToLocalCartHelper({
-        ...payload,
-        id: prodId,
-        product_id: prodId,
-        variant: payload.variant || payload.size || "Standard Size",
-        size: payload.variant || payload.size || "Standard Size",
-        price: numPrice,
-        quantity: payload.quantity || 1,
-        name: payload.name || payload.product?.name,
-        img:
-          payload.img ||
-          payload.product?.image_url ||
-          payload.product?.img ||
-          "/assets/best-selling.png",
-        product: payload.product,
-      });
-
+      const updated = addToLocalCartHelper(payload);
       await syncUpdatedCart(updated);
     },
     [syncUpdatedCart]
@@ -326,21 +280,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
     [syncUpdatedCart]
   );
 
-  // Clear all items from cart
+  // Clear all items from cart locally (preserves server cart record with updated status)
   const clearCart = useCallback(async () => {
     clearLocalCartHelper();
     setItems([]);
-    setActiveCartId(undefined);
-    removeStoredCartId();
-
-    if (token) {
-      try {
-        await clearMyCartApi(token);
-      } catch (err) {
-        console.warn("Could not sync clear cart with API:", err);
-      }
-    }
-  }, [token]);
+    updateCartId(undefined);
+  }, [updateCartId]);
 
   // Refresh cart from localStorage / API
   const refreshCart = useCallback(async () => {
@@ -352,9 +297,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [getEffectiveUserId, token, syncWithBackend]);
 
-  // Fetch latest cart by user_id and synchronize activeCartId
+  // Fetch latest cart by user_id and synchronize cartId
   const getLatestCartByUserId = useCallback(
-    async (userId?: number | string): Promise<CartItem | null> => {
+    async (userId?: number | string): Promise<any> => {
       const targetUid = getEffectiveUserId(userId);
       if (!targetUid) return null;
 
@@ -366,57 +311,26 @@ export function CartProvider({ children }: { children: ReactNode }) {
           return null;
         }
 
-        let latestItem: CartItem | null = null;
-        if (Array.isArray(res)) {
-          latestItem = res.length > 0 ? res[0] : null;
-        } else if ((res as any).carts && Array.isArray((res as any).carts)) {
-          latestItem = (res as any).carts.length > 0 ? (res as any).carts[0] : null;
-        } else if ((res as any).items && Array.isArray((res as any).items)) {
-          latestItem = (res as any).items.length > 0 ? (res as any).items[0] : null;
-        } else if ((res as any).data && Array.isArray((res as any).data)) {
-          latestItem = (res as any).data.length > 0 ? (res as any).data[0] : null;
-        } else if ((res as any).id) {
-          latestItem = res as CartItem;
+        const resolvedId = extractCartId(res);
+        if (resolvedId) {
+          updateCartId(resolvedId);
         }
 
-        if (latestItem?.id && !isNaN(Number(latestItem.id))) {
-          const parsedId = Number(latestItem.id);
-          setActiveCartId(parsedId);
-          if (typeof window !== "undefined") {
-            localStorage.setItem("active_cart_id", String(parsedId));
-            localStorage.setItem("cart_id", String(parsedId));
-          }
-        }
-
-        return latestItem;
+        return res;
       } catch (err) {
         console.warn("CartContext: getLatestCartByUserId failed:", err);
         return null;
       }
     },
-    [getEffectiveUserId, token]
+    [getEffectiveUserId, token, updateCartId]
   );
-
-  // Sync cartId whenever effective user id is available and no activeCartId
-  useEffect(() => {
-    const uid = getEffectiveUserId();
-    if (uid && !activeCartId) {
-      getLatestCartByUserId(uid);
-    }
-  }, [getEffectiveUserId, activeCartId, getLatestCartByUserId]);
-
-  // Compute resolved cart_id: activeCartId or first valid DB ID from items
-  const cartId = useMemo(() => {
-    if (activeCartId) return activeCartId;
-    return undefined;
-  }, [activeCartId]);
 
   const cartCount = useMemo(() => getCartCountHelper(items), [items]);
   const subtotal = useMemo(() => getCartSubtotalHelper(items), [items]);
 
   // Create or Update Cart in backend directly using user_id from fetch user or override
   const createOrUpdateCart = useCallback(
-    async (userIdOverride?: number | string): Promise<CartItem | null> => {
+    async (userIdOverride?: number | string): Promise<any> => {
       let targetUid = userIdOverride;
       if (!userIdOverride) {
         targetUid = getEffectiveUserId();
@@ -429,18 +343,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const uidNum = Number(targetUid);
       if (isNaN(uidNum)) return null;
 
-      // Determine existing cart_id: activeCartId or fetch latest cart
-      let cartIdToUse: number | undefined = activeCartId;
+      let cartIdToUse: number | undefined = cartId;
 
       const currentItems = items.length > 0 ? items : getLocalCart();
       const result = await syncCartToServer(currentItems, uidNum, cartIdToUse, token);
       const resId = extractCartId(result);
       if (resId) {
-        setActiveCartId(resId);
+        updateCartId(resId);
       }
       return result;
     },
-    [getEffectiveUserId, token, activeCartId, items]
+    [getEffectiveUserId, token, cartId, items, updateCartId]
   );
 
   return (
@@ -459,7 +372,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
         refreshCart,
         getLatestCartByUserId,
         createOrUpdateCart,
-        createOrUpdateCard: createOrUpdateCart,
       }}
     >
       {children}

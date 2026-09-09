@@ -14,20 +14,43 @@ import {
 } from "@/app/services/paymentService";
 import Loading from "@/app/components/common/Loading";
 import { FetchedUserDetails } from "@/app/services/userService";
-import { updateCartStatusApi, CART_STATUS } from "@/app/services/cartService";
+import { updateCartStatusApi, CART_STATUS, parseItemPrice, extractCartId } from "@/app/services/cartService";
 
+const cleanupRazorpayDOM = () => {
+  if (typeof document === "undefined") return;
+  try {
+    const containers = document.querySelectorAll(".razorpay-container");
+    containers.forEach((el) => el.remove());
+  } catch {}
+};
+
+let razorpayScriptPromise: Promise<boolean> | null = null;
 const loadRazorpayScript = (): Promise<boolean> => {
-  return new Promise((resolve) => {
-    if (typeof window === "undefined") return resolve(false);
-    if ((window as any).Razorpay) return resolve(true);
+  if (typeof window === "undefined") return Promise.resolve(false);
+  if ((window as any).Razorpay) return Promise.resolve(true);
+  if (razorpayScriptPromise) return razorpayScriptPromise;
 
+  const existingScript = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+  if (existingScript) {
+    razorpayScriptPromise = new Promise((resolve) => {
+      existingScript.addEventListener("load", () => resolve(true));
+      existingScript.addEventListener("error", () => resolve(false));
+    });
+    return razorpayScriptPromise;
+  }
+
+  razorpayScriptPromise = new Promise((resolve) => {
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
     script.async = true;
     script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
+    script.onerror = () => {
+      razorpayScriptPromise = null;
+      resolve(false);
+    };
     document.body.appendChild(script);
   });
+  return razorpayScriptPromise;
 };
 
 export default function CheckoutOrderSummary() {
@@ -69,6 +92,12 @@ export default function CheckoutOrderSummary() {
     return () => clearTimeout(timer);
   }, [billingError]);
 
+  useEffect(() => {
+    return () => {
+      cleanupRazorpayDOM();
+    };
+  }, []);
+
   const handlePlaceOrder = async () => {
     setBillingError(null);
     setIsPlacingOrder(true);
@@ -87,7 +116,16 @@ export default function CheckoutOrderSummary() {
       const phone = formData.phone.trim();
       const email = formData.email.trim();
 
-      // Step 1: Save or update billing form data on server
+      // Step 1: Look up existing user by phone/email to set fetchedUser state before saving
+      if (phone || email) {
+        try {
+          await fetchDevoteeUser(phone, email);
+        } catch (fetchErr) {
+          console.warn("Could not fetch user details before saving:", fetchErr);
+        }
+      }
+
+      // Step 2: Save or update billing form data on server
       let activeUser: FetchedUserDetails | null = null;
       try {
         activeUser = await handleSaveDetails(token || undefined);
@@ -95,28 +133,22 @@ export default function CheckoutOrderSummary() {
         console.warn("Could not save billing details to server:", saveErr);
       }
 
-      const resolvedUserId = activeUser?.id
-        ? Number(activeUser.id)
-        : fetchedUser?.id
-          ? Number(fetchedUser.id)
-          : undefined;
-
-      // Step 2: Add or update cart data on server with resolved user ID
-      let resolvedCartId = cartId || cart_id;
-      if (resolvedUserId) {
-        try {
-          const syncdCart = await createOrUpdateCart(resolvedUserId);
-          if (syncdCart?.id && !isNaN(Number(syncdCart.id))) {
-            resolvedCartId = Number(syncdCart.id);
-          }
-        } catch (cartErr) {
-          console.warn("createOrUpdateCart on order place error:", cartErr);
-        }
-
-      } else {
-        setBillingError("User is missing. Please provide a valid phone, email, or username.");
+      if (!activeUser?.id) {
+        setBillingError("Could not verify devotee profile with the server. Please check your network and retry.");
         setIsPlacingOrder(false);
         return;
+      }
+
+      // Step 3: Add or update cart data on server with activeUser.id
+      let resolvedCartId = cartId || cart_id;
+      try {
+        const syncdCart = await createOrUpdateCart(activeUser.id);
+        const syncdId = extractCartId(syncdCart);
+        if (syncdId) {
+          resolvedCartId = syncdId;
+        }
+      } catch (cartErr) {
+        console.warn("createOrUpdateCart on order place error:", cartErr);
       }
       // setIsPlacingOrder(false);
       // return;
@@ -139,7 +171,7 @@ export default function CheckoutOrderSummary() {
               phone: resolvedPhone || phone,
               email: resolvedEmail || email,
               username: devoteeName,
-              user_id: resolvedUserId,
+              user_id: Number(activeUser.id),
               cart_id: resolvedCartId,
               products: items && items.length > 0 ? items : undefined,
             },
@@ -192,7 +224,7 @@ export default function CheckoutOrderSummary() {
             phone: resolvedPhone || phone,
             email: resolvedEmail || email,
             username: devoteeName,
-            user_id: resolvedUserId,
+            user_id: Number(activeUser.id),
             cart_id: resolvedCartId,
             products: items && items.length > 0 ? items : undefined,
           },
@@ -213,8 +245,14 @@ export default function CheckoutOrderSummary() {
         return;
       }
 
-      const rzpKey =
-        process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+      const rzpKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+      if (!rzpKey) {
+        setBillingError("Online payment gateway is temporarily unconfigured. Please select Cash on Delivery or contact support.");
+        setIsPlacingOrder(false);
+        return;
+      }
+
+      let rzpInstance: any = null;
 
       const options: any = {
         key: rzpKey,
@@ -238,6 +276,12 @@ export default function CheckoutOrderSummary() {
           color: "#d20b4f",
         },
         handler: async function (response: any) {
+          console.log("razorpay handler response---->", response);
+          try {
+            rzpInstance?.close();
+          } catch {}
+          cleanupRazorpayDOM();
+
           setIsPlacingOrder(true);
           try {
             if (response.razorpay_signature) {
@@ -288,25 +332,37 @@ export default function CheckoutOrderSummary() {
           }
         },
         modal: {
+          escape: true,
+          backdropclose: true,
           ondismiss: function () {
             setIsPlacingOrder(false);
+            try {
+              rzpInstance?.close();
+            } catch {}
+            cleanupRazorpayDOM();
           },
         },
       };
 
       try {
-        const rzp = new (window as any).Razorpay(options);
-        rzp.on("payment.failed", async function (resp: any) {
+        rzpInstance = new (window as any).Razorpay(options);
+        rzpInstance.on("payment.failed", async function (resp: any) {
           console.error("Razorpay payment failed:", resp.error);
+          try {
+            rzpInstance?.close();
+          } catch {}
+          cleanupRazorpayDOM();
+
           if (resolvedCartId) {
             await updateCartStatusApi(resolvedCartId, CART_STATUS.FAILED, token || undefined);
           }
           setBillingError(`Payment was declined: ${resp.error?.description || "Transaction failed"}`);
           setIsPlacingOrder(false);
         });
-        rzp.open();
+        rzpInstance.open();
       } catch (modalErr: any) {
         console.error("Failed to open Razorpay modal:", modalErr);
+        cleanupRazorpayDOM();
         setBillingError("Could not open payment checkout modal. Please try again.");
         setIsPlacingOrder(false);
       } finally {
@@ -430,18 +486,15 @@ export default function CheckoutOrderSummary() {
       {/* Items list */}
       <div className="space-y-3 divide-y divide-[#d20b4f]/10 max-h-72 overflow-y-auto pr-1">
         {items.map((item, i) => {
-          const itemPrice =
-            typeof item.price === "number"
-              ? item.price
-              : parseFloat(String(item.price || "0").replace(/[^0-9.]/g, "")) || 0;
+          const itemPrice = parseItemPrice(item.price);
           const itemQty = Number(item.quantity) || 1;
-          const itemImg = item.img || item.product?.img || item.product?.image_url || "/assets/best-selling.png";
-          const itemName = item.name || item.product?.name || "Sacred Item";
-          const itemVariant = item.variant || item.size;
+          const itemImg = item.img || item.image_url || "/assets/best-selling.png";
+          const itemName = item.name || "Sacred Item";
+          const itemVariant = item.variant;
 
           return (
             <div
-              key={`${item.id ?? item.product_id ?? i}-${itemVariant || ""}`}
+              key={`${item.product_id ?? i}-${itemVariant || ""}`}
               className="flex items-center justify-between pt-2"
             >
               <div className="flex items-center gap-2.5">

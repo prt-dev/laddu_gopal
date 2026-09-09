@@ -137,8 +137,7 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
         if (fetched) {
           setFetchedUser(fetched);
           if (typeof window !== "undefined" && fetched.id) {
-            localStorage.setItem("devotee_user_id", String(fetched.id));
-            localStorage.setItem("devotee_user", JSON.stringify(fetched));
+            localStorage.setItem("web_customer_user", JSON.stringify(fetched));
             window.dispatchEvent(new CustomEvent("devotee_user_updated", { detail: fetched.id }));
           }
           return fetched;
@@ -154,70 +153,35 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
     [user, token]
   );
 
-  // Initial form loading from localStorage and auth profile (API fetch ONLY if user logged in)
+  // Initial form loading from localStorage and auth profile (purely local & instant)
   useEffect(() => {
-    let isMounted = true;
+    let initialForm = { ...initialEmptyForm };
 
-    const loadInitialData = async () => {
-      let initialForm = { ...initialEmptyForm };
-
-      try {
-        const savedData = localStorage.getItem(DEVOTEE_BILLING_STORAGE_KEY);
-        if (savedData) {
-          const parsed = JSON.parse(savedData);
-          initialForm = { ...initialForm, ...parsed };
-          if (parsed.address || parsed.phone || parsed.email) {
-            if (isMounted) setHasSavedData(true);
-          }
-        }
-      } catch (err) {
-        console.warn("Could not read stored billing details:", err);
-      }
-
-      if (user) {
-        const u = extractUserDetails(user);
-        (Object.keys(u) as (keyof BillingFormData)[]).forEach((key) => {
-          if (!initialForm[key] && u[key]) initialForm[key] = u[key];
-        });
-        if (initialForm.phone || initialForm.email || initialForm.address) {
-          if (isMounted) setHasSavedData(true);
+    try {
+      const savedData = localStorage.getItem(DEVOTEE_BILLING_STORAGE_KEY);
+      if (savedData) {
+        const parsed = JSON.parse(savedData);
+        initialForm = { ...initialForm, ...parsed };
+        if (parsed.address || parsed.phone || parsed.email) {
+          setHasSavedData(true);
         }
       }
+    } catch (err) {
+      console.warn("Could not read stored billing details:", err);
+    }
 
-      if (isMounted) setFormData(initialForm);
-
-      // Only fetch from backend on initial render IF user is logged in
-      if (user || token) {
-        const phoneToFetch = (initialForm.phone || user?.phone || "").trim();
-        const emailToFetch = (initialForm.email || user?.email || "").trim();
-
-        try {
-          const serverUser = await fetchDevoteeUser(phoneToFetch, emailToFetch);
-          if (serverUser && isMounted) {
-            const serverDetails = extractUserDetails(serverUser);
-            setHasSavedData(true);
-            setIsFormSaved(true);
-            setFormData((prev) => {
-              const merged = { ...prev };
-              (Object.keys(serverDetails) as (keyof BillingFormData)[]).forEach((k) => {
-                if (!merged[k] && serverDetails[k]) merged[k] = serverDetails[k];
-              });
-              return merged;
-            });
-          }
-        } catch (err) {
-          console.warn("Could not fetch user details on mount:", err);
-        } finally {
-          // Mount fetch complete
-        }
+    if (user) {
+      const u = extractUserDetails(user);
+      (Object.keys(u) as (keyof BillingFormData)[]).forEach((key) => {
+        if (!initialForm[key] && u[key]) initialForm[key] = u[key];
+      });
+      if (initialForm.phone || initialForm.email || initialForm.address) {
+        setHasSavedData(true);
       }
-    };
+    }
 
-    loadInitialData();
-    return () => {
-      isMounted = false;
-    };
-  }, [user, token, fetchDevoteeUser]);
+    setFormData(initialForm);
+  }, [user]);
 
   // Dirty checking: Compare formData against server/auth devotee profile
   const isDataSame = useMemo(() => {
@@ -297,7 +261,6 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
       const targetUserId = loggedInUserId || fetchedUser?.id;
 
       const payload: UserSavePayload = {
-        id: targetUserId || undefined,
         firstname: formData.firstName.trim(),
         lastname: formData.lastName.trim(),
         name: `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim(),
@@ -314,8 +277,7 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
         const savedUser = await saveUserApi(payload, tokenOverride || token || null, targetUserId);
         setFetchedUser(savedUser);
         if (typeof window !== "undefined" && savedUser?.id) {
-          localStorage.setItem("devotee_user_id", String(savedUser.id));
-          localStorage.setItem("devotee_user", JSON.stringify(savedUser));
+          localStorage.setItem("web_customer_user", JSON.stringify(savedUser));
         }
         setIsFormSaved(true);
         setSaveMessage({
@@ -343,6 +305,7 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
   const handleClearSavedDetails = useCallback(() => {
     try {
       localStorage.removeItem(DEVOTEE_BILLING_STORAGE_KEY);
+      localStorage.removeItem("web_customer_user");
       localStorage.removeItem("devotee_user_id");
       localStorage.removeItem("devotee_user");
       if (typeof window !== "undefined") {

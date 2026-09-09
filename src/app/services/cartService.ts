@@ -9,23 +9,12 @@ export const CART_STATUS = {
 
 export type CartStatus = (typeof CART_STATUS)[keyof typeof CART_STATUS];
 
-export interface CartItem {
-  id?: number | string;
-  user_id?: number | string;
+
+export interface CartItem extends Omit<ProductItem, "id" | "variant" | "price" | "status" | "created_at" | "updated_at"> {
   product_id?: number | string;
-  variant?: string; // variant is size of product (e.g. "Size 4", "Size 0", "Size M / Black")
+  variant?: string; // variant is size/variation of product (e.g. "Size 4", "Size 0")
   quantity?: number;
   price?: number | string;
-  product?: ProductItem;
-  products?: any;
-  status?: number; // 0 = failed, 1 = pending, 2 = completed
-  created_at?: string;
-  updated_at?: string;
-
-  // UI & LocalStorage convenience fields
-  name?: string;
-  img?: string;
-  size?: string;
 }
 
 export interface GetCartParams {
@@ -37,7 +26,79 @@ export interface GetCartParams {
 }
 
 export const ACTIVE_CART_ID_KEY = "active_cart_id";
-export const CART_ID_KEY = "cart_id";
+export const CART_ID_KEY = "active_cart_id"; // Backward compatibility alias
+
+/**
+ * Safely parse and sanitize price values into clean numbers
+ */
+export function parseItemPrice(price?: number | string | null): number {
+  if (typeof price === "number") return isNaN(price) ? 0 : price;
+  if (!price) return 0;
+  const cleaned = parseFloat(String(price).replace(/[^0-9.]/g, ""));
+  return isNaN(cleaned) ? 0 : cleaned;
+}
+
+/**
+ * Normalizes any partial cart/product object into a consistent CartItem
+ */
+export function normalizeCartItem(item: Partial<CartItem> & { [key: string]: any }): CartItem {
+  const prodId = item.product_id !== undefined ? item.product_id : item.id;
+  const variant = item.variant || item.size || "Standard Size";
+  const numPrice = parseItemPrice(item.price);
+  const qty = item.quantity && Number(item.quantity) > 0 ? Number(item.quantity) : 1;
+  const image =
+    item.image_url ||
+    item.img ||
+    "/assets/best-selling.png";
+
+  const normalized: CartItem = {
+    ...item,
+    product_id: prodId,
+    variant: String(variant),
+    price: numPrice,
+    quantity: qty,
+    name: item.name || "Sacred Devotional Item",
+    description: item.description || "",
+    sku: item.sku,
+    stock_quantity: item.stock_quantity,
+    category_id: item.category_id,
+    category: item.category,
+    image_url: image,
+    img: image,
+  };
+  delete (normalized as any).id;
+  delete (normalized as any).size;
+  delete (normalized as any).product;
+  delete (normalized as any).products;
+  delete (normalized as any).status;
+  return normalized;
+}
+
+/**
+ * Safely unpacks cart items from varied backend response structures
+ */
+export function extractBackendCartItems(cartData: any): CartItem[] {
+  if (!cartData) return [];
+  if (Array.isArray(cartData)) return cartData.map(normalizeCartItem);
+
+  const rawList = cartData.cartitems !== undefined ? cartData.cartitems : cartData.products;
+  if (rawList) {
+    try {
+      const parsed = typeof rawList === "string" ? JSON.parse(rawList) : rawList;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map(normalizeCartItem);
+      }
+    } catch (e) {
+      console.warn("Could not parse cartitems JSON from cart:", e);
+    }
+  }
+
+  if (Array.isArray(cartData.items)) return cartData.items.map(normalizeCartItem);
+  if (Array.isArray(cartData.carts)) return cartData.carts.map(normalizeCartItem);
+  if (cartData.product_id || cartData.id) return [normalizeCartItem(cartData)];
+
+  return [];
+}
 
 /**
  * Get stored cart_id from localStorage
@@ -45,7 +106,7 @@ export const CART_ID_KEY = "cart_id";
 export function getStoredCartId(): number | undefined {
   if (typeof window === "undefined") return undefined;
   try {
-    const val = localStorage.getItem(ACTIVE_CART_ID_KEY) || localStorage.getItem(CART_ID_KEY);
+    const val = localStorage.getItem(ACTIVE_CART_ID_KEY) || localStorage.getItem("cart_id");
     if (val && !isNaN(Number(val))) {
       return Number(val);
     }
@@ -53,30 +114,23 @@ export function getStoredCartId(): number | undefined {
   return undefined;
 }
 
-/**
- * Set stored cart_id in localStorage and dispatch sync events
- */
 export function setStoredCartId(cartId: number | string): void {
   if (typeof window === "undefined") return;
   try {
     const numId = Number(cartId);
     if (!isNaN(numId)) {
       localStorage.setItem(ACTIVE_CART_ID_KEY, String(numId));
-      localStorage.setItem(CART_ID_KEY, String(numId));
       window.dispatchEvent(new Event("cart_updated"));
       window.dispatchEvent(new CustomEvent("cart_id_updated", { detail: numId }));
     }
   } catch { }
 }
 
-/**
- * Remove stored cart_id from localStorage and dispatch sync events
- */
 export function removeStoredCartId(): void {
   if (typeof window === "undefined") return;
   try {
     localStorage.removeItem(ACTIVE_CART_ID_KEY);
-    localStorage.removeItem(CART_ID_KEY);
+    localStorage.removeItem("cart_id");
     window.dispatchEvent(new Event("cart_updated"));
     window.dispatchEvent(new CustomEvent("cart_id_updated", { detail: undefined }));
   } catch { }
@@ -115,66 +169,38 @@ async function handleApiResponse(response: Response, defaultErrorMsg: string) {
   return response.json();
 }
 
-/**
- * Format cart payload ensuring:
- * - json data of cartitems (products)
- * - user id (user_id)
- * - total amount as price (price)
- * where each cartitem contains product_id, variant, and quantity
- */
+
 export function formatCartPayload(data: {
   products?: any;
-  cartitems?: any;
   user_id?: number | string;
   price?: number | string;
-  product_id?: number | string;
-  variant?: string;
-  size?: string;
-  quantity?: number;
   status?: number | string;
-  [key: string]: any;
-}): { products: string; user_id: number; price: number; status?: number } {
-  const rawProducts = data.products !== undefined ? data.products : data.cartitems;
+}): { products: string; user_id: number; price: number; status: number } {
+  const rawProducts = data.products;
   let productsJson: string;
 
   if (typeof rawProducts === "string") {
     productsJson = rawProducts;
   } else if (Array.isArray(rawProducts)) {
     const formatted = rawProducts.map((it: any) => ({
-      id: it.id,
       product_id: it.product_id !== undefined ? it.product_id : it.id,
-      variant: it.variant || it.size || "Standard Size",
+      variant: it.variant || "Standard Size",
       quantity: Math.max(1, Number(it.quantity) || 1),
       price: Number(it.price) || 0,
     }));
     productsJson = JSON.stringify(formatted);
   } else if (rawProducts && typeof rawProducts === "object") {
     productsJson = JSON.stringify([rawProducts]);
-  } else if (data.product_id !== undefined) {
-    productsJson = JSON.stringify([
-      {
-        id: data.id || data.product_id,
-        product_id: data.product_id,
-        variant: data.variant || data.size || "Standard Size",
-        quantity: Math.max(1, Number(data.quantity) || 1),
-        price: Number(data.price) || 0,
-      },
-    ]);
   } else {
     productsJson = "[]";
   }
 
-  const payload: { products: string; user_id: number; price: number; status?: number } = {
+  return {
     products: productsJson,
     user_id: Number(data.user_id),
     price: Number(data.price || 0),
+    status: data.status !== undefined && data.status !== null ? Number(data.status) : CART_STATUS.PENDING,
   };
-
-  if (data.status !== undefined && data.status !== null) {
-    payload.status = Number(data.status);
-  }
-
-  return payload;
 }
 
 /**
@@ -198,6 +224,29 @@ export function extractCartId(res: any): number | undefined {
 // ==========================================
 
 /**
+ * 4. Get Latest Cart by User ID where status is pending (1)
+ * Endpoint: GET /api/v1/carts/latest/{user_id}?status=1
+ */
+export async function getLatestCartByUserId(
+  userId: number | string,
+  token?: string | null,
+  status: number = CART_STATUS.PENDING
+): Promise<any> {
+  try {
+    const url = `${BASE_URL}/carts/latest/${userId}?status=${status}`;
+    const response = await fetch(url, {
+      method: "GET",
+      headers: getApiHeaders(token || undefined, ""),
+    });
+    if (!response.ok) return null;
+    return response.json();
+  } catch (err) {
+    console.warn("Could not get latest cart by user_id:", err);
+    return null;
+  }
+}
+
+/**
  * 1. Create Cart Item / Add to Cart
  * Endpoint: POST /api/v1/carts/create
  * Sends ONLY:
@@ -207,13 +256,10 @@ export function extractCartId(res: any): number | undefined {
  * where each cartitem contains product_id, variant, quantity
  */
 export async function addToCartApi(
-  data: Partial<CartItem> & { cartitems?: any;[key: string]: any },
+  data: { products?: any; user_id?: number | string; price?: number | string; status?: number | string;[key: string]: any },
   token?: string
 ) {
-  const payload = formatCartPayload({
-    ...data,
-    status: data.status !== undefined && data.status !== null ? Number(data.status) : CART_STATUS.PENDING,
-  });
+  const payload = formatCartPayload(data);
   const response = await fetch(`${BASE_URL}/carts/create`, {
     method: "POST",
     headers: getApiHeaders(token),
@@ -226,6 +272,140 @@ export async function addToCartApi(
     setStoredCartId(createdId);
   }
   return result;
+}
+
+/**
+ * 6. Update Cart Item
+ * Endpoint: PUT /api/v1/carts/{cart_id}
+ * Sends ONLY:
+ * - json data of cartitems (products)
+ * - user id (user_id)
+ * - total amount as price (price)
+ * where each cartitem contains product_id, variant, quantity
+ */
+export async function updateCartItemApi(
+  cartId: number | string,
+  data: { products?: any; user_id?: number | string; price?: number | string; status?: number | string;[key: string]: any },
+  token?: string
+) {
+  const payload = formatCartPayload(data);
+  const response = await fetch(`${BASE_URL}/carts/${cartId}`, {
+    method: "PUT",
+    headers: getApiHeaders(token),
+    body: JSON.stringify(payload),
+  });
+
+  const result = await handleApiResponse(response, "Failed to update cart item");
+  const updatedId = extractCartId(result) || (Number(cartId) < 100000000000 ? Number(cartId) : undefined);
+  if (updatedId) {
+    setStoredCartId(updatedId);
+  }
+  return result;
+}
+
+/**
+ * 7. Create or Update Cart
+ * If cart_id or id is provided, updates via PUT /api/v1/carts/{cart_id}
+ * Otherwise creates via POST /api/v1/carts/create
+ * Automatically sets cartId on success
+ */
+export async function createOrUpdateCartApi(
+  data: {
+    cart_id?: number | string;
+    id?: number | string;
+    products?: any;
+    user_id?: number | string;
+    price?: number | string;
+    status?: number | string;
+    [key: string]: any;
+  },
+  token?: string | null
+): Promise<any> {
+  const targetCartId = data.cart_id || data.id;
+
+  if (targetCartId && !isNaN(Number(targetCartId)) && Number(targetCartId) < 100000000000) {
+    try {
+      return await updateCartItemApi(targetCartId, data, token || undefined);
+    } catch (err: any) {
+      const isNotFound =
+        err?.status === 404 ||
+        err?.message === "Cart item not found" ||
+        err?.message?.includes("Cart item not found");
+
+      if (isNotFound) {
+        console.warn("Cart item not found on server (404), falling back to create cart:", err);
+        removeStoredCartId();
+        return await addToCartApi(data, token || undefined);
+      }
+
+      console.warn("Update cart item failed:", err);
+      return null;
+    }
+  }
+
+  return await addToCartApi(data, token || undefined);
+}
+
+/**
+ * 8. Sync Entire Cart Items List to Server
+ * Calculates total amount, formats products with product_id, variant, and quantity,
+ * and sends only required fields to create or update cart on server.
+ */
+export async function syncCartToServer(
+  items: CartItem[],
+  userId?: number | string,
+  cartId?: number | string,
+  token?: string | null
+): Promise<any> {
+  if (!userId || isNaN(Number(userId))) return null;
+  const numPrice = items.reduce(
+    (sum, it) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 1),
+    0
+  );
+  return createOrUpdateCartApi(
+    {
+      cart_id: cartId,
+      products: items,
+      user_id: Number(userId),
+      price: Number(numPrice.toFixed(2)),
+    },
+    token || null
+  );
+}
+
+/**
+ * 10. Update Cart Status
+ * 0 = failed, 1 = pending, 2 = completed
+ * Endpoint: PUT /api/v1/carts/{cart_id}
+ */
+export async function updateCartStatusApi(
+  cartId: number | string,
+  status: 0 | 1 | 2 | number,
+  token?: string
+) {
+  if (!cartId || isNaN(Number(cartId)) || Number(cartId) >= 100000000000) return null;
+  try {
+    return await updateCartItemApi(cartId, { status }, token);
+  } catch (err) {
+    console.warn(`Failed to update cart ${cartId} status to ${status}:`, err);
+    return null;
+  }
+}
+
+// Non using api functions start //
+/**
+ * 9. Delete Single Cart Item
+ * Endpoint: DELETE /api/v1/carts/{cart_id}
+ */
+export async function deleteCartItemApi(
+  cartId: number | string,
+  token?: string
+) {
+  const response = await fetch(`${BASE_URL}/carts/${cartId}`, {
+    method: "DELETE",
+    headers: getApiHeaders(token, ""),
+  });
+  return handleApiResponse(response, "Failed to delete cart item");
 }
 
 /**
@@ -263,28 +443,6 @@ export async function getAllCartsApi(
   return handleApiResponse(response, "Failed to fetch cart items");
 }
 
-/**
- * 4. Get Latest Cart by User ID where status is pending (1)
- * Endpoint: GET /api/v1/carts/latest/{user_id}?status=1
- */
-export async function getLatestCartByUserId(
-  userId: number | string,
-  token?: string | null,
-  status: number = CART_STATUS.PENDING
-): Promise<CartItem | null> {
-  try {
-    const url = `${BASE_URL}/carts/latest/${userId}?status=${status}`;
-    const response = await fetch(url, {
-      method: "GET",
-      headers: getApiHeaders(token || undefined, ""),
-    });
-    if (!response.ok) return null;
-    return response.json();
-  } catch (err) {
-    console.warn("Could not get latest cart by user_id:", err);
-    return null;
-  }
-}
 
 /**
  * 5. Get Single Cart Item by ID
@@ -302,120 +460,6 @@ export async function getCartItemById(
 }
 
 /**
- * 6. Update Cart Item
- * Endpoint: PUT /api/v1/carts/{cart_id}
- * Sends ONLY:
- * - json data of cartitems (products)
- * - user id (user_id)
- * - total amount as price (price)
- * where each cartitem contains product_id, variant, quantity
- */
-export async function updateCartItemApi(
-  cartId: number | string,
-  data: Partial<CartItem> & { cartitems?: any;[key: string]: any },
-  token?: string
-) {
-  const payload = formatCartPayload(data);
-  const response = await fetch(`${BASE_URL}/carts/${cartId}`, {
-    method: "PUT",
-    headers: getApiHeaders(token),
-    body: JSON.stringify(payload),
-  });
-
-  const result = await handleApiResponse(response, "Failed to update cart item");
-  const updatedId = extractCartId(result) || (Number(cartId) < 100000000000 ? Number(cartId) : undefined);
-  if (updatedId) {
-    setStoredCartId(updatedId);
-  }
-  return result;
-}
-
-/**
- * 7. Create or Update Cart
- * If cart_id or id is provided, updates via PUT /api/v1/carts/{cart_id}
- * Otherwise creates via POST /api/v1/carts/create
- * Automatically sets cartId on success
- */
-export async function createOrUpdateCartApi(
-  data: Partial<CartItem> & {
-    cart_id?: number | string;
-    id?: number | string;
-    products?: any;
-    cartitems?: any;
-    user_id?: number | string;
-    price?: number | string;
-    [key: string]: any;
-  },
-  token?: string | null
-): Promise<CartItem | null> {
-  const targetCartId = data.cart_id || data.id;
-
-  if (targetCartId && !isNaN(Number(targetCartId)) && Number(targetCartId) < 100000000000) {
-    try {
-      return await updateCartItemApi(targetCartId, data, token || undefined);
-    } catch (err: any) {
-      const isNotFound =
-        err?.status === 404 ||
-        err?.message === "Cart item not found" ||
-        err?.message?.includes("Cart item not found");
-
-      if (isNotFound) {
-        console.warn("Cart item not found on server (404), falling back to create cart:", err);
-        removeStoredCartId();
-        return await addToCartApi(data, token || undefined);
-      }
-
-      console.warn("Update cart item failed:", err);
-      return null;
-    }
-  }
-
-  return await addToCartApi(data, token || undefined);
-}
-
-/**
- * 8. Sync Entire Cart Items List to Server
- * Calculates total amount, formats products with product_id, variant, and quantity,
- * and sends only required fields to create or update cart on server.
- */
-export async function syncCartToServer(
-  items: CartItem[],
-  userId?: number | string,
-  cartId?: number | string,
-  token?: string | null
-): Promise<CartItem | null> {
-  if (!userId || isNaN(Number(userId))) return null;
-  const numPrice = items.reduce(
-    (sum, it) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 1),
-    0
-  );
-  return createOrUpdateCartApi(
-    {
-      cart_id: cartId,
-      products: items,
-      user_id: Number(userId),
-      price: Number(numPrice.toFixed(2)),
-    },
-    token || null
-  );
-}
-
-/**
- * 9. Delete Single Cart Item
- * Endpoint: DELETE /api/v1/carts/{cart_id}
- */
-export async function deleteCartItemApi(
-  cartId: number | string,
-  token?: string
-) {
-  const response = await fetch(`${BASE_URL}/carts/${cartId}`, {
-    method: "DELETE",
-    headers: getApiHeaders(token, ""),
-  });
-  return handleApiResponse(response, "Failed to delete cart item");
-}
-
-/**
  * 9. Clear My Cart
  * Endpoint: DELETE /api/v1/carts/clear
  */
@@ -429,24 +473,7 @@ export async function clearMyCartApi(token?: string) {
   return result;
 }
 
-/**
- * 10. Update Cart Status
- * 0 = failed, 1 = pending, 2 = completed
- * Endpoint: PUT /api/v1/carts/{cart_id}
- */
-export async function updateCartStatusApi(
-  cartId: number | string,
-  status: 0 | 1 | 2 | number,
-  token?: string
-) {
-  if (!cartId || isNaN(Number(cartId)) || Number(cartId) >= 100000000000) return null;
-  try {
-    return await updateCartItemApi(cartId, { status }, token);
-  } catch (err) {
-    console.warn(`Failed to update cart ${cartId} status to ${status}:`, err);
-    return null;
-  }
-}
+// Non using api functions end //
 
 // ==========================================
 // LOCALSTORAGE CART PERSISTENCE & HELPERS
@@ -488,22 +515,11 @@ export function saveLocalCart(items: CartItem[]): void {
  */
 export function addToLocalCart(item: Partial<CartItem>): CartItem[] {
   const current = getLocalCart();
-  const prodId = item.product_id !== undefined ? item.product_id : item.id;
-  const variant = item.variant || item.size || "Standard Size";
-  const numPrice =
-    typeof item.price === "number"
-      ? item.price
-      : parseFloat(String(item.price || 0).replace(/[^0-9.]/g, "")) || 0;
-  const qty = item.quantity && item.quantity > 0 ? item.quantity : 1;
+  const normalized = normalizeCartItem(item);
 
-  const existingIndex = current.findIndex((c) => {
-    const matchId =
-      c.product_id !== undefined && prodId !== undefined
-        ? String(c.product_id) === String(prodId)
-        : String(c.id) === String(item.id || prodId);
-    const matchVariant = (c.variant || c.size || "") === variant;
-    return matchId && matchVariant;
-  });
+  const existingIndex = current.findIndex(
+    (c) => String(c.product_id) === String(normalized.product_id) && (c.variant || "") === (normalized.variant || "")
+  );
 
   let updated: CartItem[];
   if (existingIndex > -1) {
@@ -511,29 +527,15 @@ export function addToLocalCart(item: Partial<CartItem>): CartItem[] {
       if (idx === existingIndex) {
         return {
           ...c,
-          quantity: (c.quantity || 1) + qty,
-          price: numPrice > 0 ? numPrice : c.price,
+          ...normalized,
+          quantity: (c.quantity || 1) + (normalized.quantity || 1),
+          price: normalized.price ? normalized.price : c.price,
         };
       }
       return c;
     });
   } else {
-    const newItem: CartItem = {
-      id: item.id || prodId || Date.now(),
-      product_id: prodId,
-      name: item.name || item.product?.name || "Sacred Devotional Item",
-      img:
-        item.img ||
-        item.product?.image_url ||
-        item.product?.img ||
-        "/assets/best-selling.png",
-      variant: variant,
-      size: variant,
-      price: numPrice,
-      quantity: qty,
-      product: item.product,
-    };
-    updated = [...current, newItem];
+    updated = [...current, normalized];
   }
 
   saveLocalCart(updated);
@@ -544,7 +546,7 @@ export function addToLocalCart(item: Partial<CartItem>): CartItem[] {
  * Update quantity of an item in localStorage
  */
 export function updateLocalCartQuantity(
-  id: number | string,
+  productId: number | string,
   deltaOrQty: number,
   variant?: string,
   isAbsolute: boolean = false
@@ -552,8 +554,8 @@ export function updateLocalCartQuantity(
   const current = getLocalCart();
   const updated = current
     .map((c) => {
-      const matchId = String(c.id) === String(id) || String(c.product_id) === String(id);
-      const matchVariant = variant !== undefined ? (c.variant || c.size || "") === variant : true;
+      const matchId = String(c.product_id) === String(productId);
+      const matchVariant = variant !== undefined ? (c.variant || "") === variant : true;
       if (matchId && matchVariant) {
         const curQty = c.quantity || 1;
         const newQty = isAbsolute
@@ -573,13 +575,13 @@ export function updateLocalCartQuantity(
  * Remove an item from localStorage
  */
 export function removeLocalCartItem(
-  id: number | string,
+  productId: number | string,
   variant?: string
 ): CartItem[] {
   const current = getLocalCart();
   const updated = current.filter((c) => {
-    const matchId = String(c.id) === String(id) || String(c.product_id) === String(id);
-    const matchVariant = variant !== undefined ? (c.variant || c.size || "") === variant : true;
+    const matchId = String(c.product_id) === String(productId);
+    const matchVariant = variant !== undefined ? (c.variant || "") === variant : true;
     return !(matchId && matchVariant);
   });
 
@@ -614,7 +616,7 @@ export function getCartCount(items?: CartItem[]): number {
 export function getCartSubtotal(items?: CartItem[]): number {
   const list = items || getLocalCart();
   return list.reduce(
-    (sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1),
+    (sum, item) => sum + parseItemPrice(item.price) * (Number(item.quantity) || 1),
     0
   );
 }

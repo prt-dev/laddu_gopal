@@ -47,9 +47,8 @@ export interface GeneralContextType {
   removeFromCart: (id: number | string, variant?: string) => Promise<void>;
   clearCart: () => Promise<void>;
   refreshCart: () => Promise<void>;
-  getLatestCartByUserId: (userId?: number | string) => Promise<CartItem | null>;
-  createOrUpdateCart: (userIdOverride?: number | string) => Promise<CartItem | null>;
-  createOrUpdateCard: (userIdOverride?: number | string) => Promise<CartItem | null>;
+  getLatestCartByUserId: (userId?: number | string) => Promise<any>;
+  createOrUpdateCart: (userIdOverride?: number | string) => Promise<any>;
 
   // Combined Status & Actions
   isLoading: boolean;
@@ -73,7 +72,6 @@ export function GeneralProvider({ children }: { children: ReactNode }) {
     refreshCart,
     getLatestCartByUserId,
     createOrUpdateCart,
-    createOrUpdateCard,
   } = useCart();
 
   const [products, setProducts] = useState<ProductItem[]>([]);
@@ -218,7 +216,6 @@ export function GeneralProvider({ children }: { children: ReactNode }) {
     refreshCart,
     getLatestCartByUserId,
     createOrUpdateCart,
-    createOrUpdateCard,
     isLoading: isLoadingProducts || isLoadingCategories,
     refreshAll,
   };
