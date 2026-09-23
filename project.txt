@@ -1,0 +1,43 @@
+Home Page
+==========
+
+-- banner
+-- collections (products): fetch products
+-- fetch cart items
+
+
+Category
+========
+
+-- fetch categories
+-- fetch products
+-- fetch cart items
+-- feature products
+
+
+Product Details Page
+===================
+
+-- fetch product
+-- fetch categories
+-- fetch cart items
+-- feature products
+-- similar products
+
+
+Cart Page
+=========
+
+-- fetch cart items
+-- update cart
+
+
+Checkout Page
+=============
+
+-- fetch cart items
+-- fetch user details if logged in
+-- create user by billing form if not logged in
+-- create order
+-- razorpay payment
+-- create payment on payment success/failed
