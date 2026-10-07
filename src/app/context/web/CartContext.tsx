@@ -36,7 +36,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setItems(localCartItems);
       setCartCount(getCartItemsCount(localCartItems));
       setSubtotal(getCartItemsSubtotal(localCartItems));
-
       if (user || token) {
         await syncCartToServer(localCartItems, token, user?.id);
       }
@@ -48,7 +47,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     window.addEventListener("cart_updated", refreshCart);
     return () => window.removeEventListener("cart_updated", refreshCart);
 
-  }, []);
+  }, [user, token]);
 
   return (
     <CartContext.Provider

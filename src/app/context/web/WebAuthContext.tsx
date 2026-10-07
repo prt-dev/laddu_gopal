@@ -60,22 +60,23 @@ export function WebAuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEYS.USER || e.key === STORAGE_KEYS.TOKEN) {
-        if (!e.newValue) {
-          setUser(null);
-          setToken(null);
-        } else if (e.key === STORAGE_KEYS.USER) {
-          try {
-            setUser(JSON.parse(e.newValue));
-          } catch {
-            setUser(null);
-          }
-        }
+    const refreshUser = () => {
+      try {
+        const storedUser = localStorage.getItem(STORAGE_KEYS.USER);
+        const storedToken = localStorage.getItem(STORAGE_KEYS.TOKEN);
+        setUser(storedUser ? JSON.parse(storedUser) : null);
+        setToken(storedToken || null);
+      } catch {
+        setUser(null);
+        setToken(null);
       }
     };
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+
+    window.addEventListener("user_updated", refreshUser);
+
+    return () => {
+      window.removeEventListener("user_updated", refreshUser);
+    };
   }, []);
 
   const getUser = useCallback(async (authToken: string) => {

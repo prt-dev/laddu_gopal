@@ -157,7 +157,7 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
 
       try {
         const savedUser = await saveUserApi(payload, tokenOverride || token || null, loggedInUserId);
-        if (typeof window !== "undefined" && savedUser?.id) {
+        if (typeof window !== "undefined") {
           localStorage.setItem("web_customer_user", JSON.stringify(savedUser));
         }
         setIsFormSaved(true);
@@ -165,6 +165,7 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
           type: "success",
           text: "Address details saved successfully to your devotee profile! 🪔",
         });
+        window.dispatchEvent(new CustomEvent("user_updated"));
         setTimeout(() => setSaveMessage(null), 4000);
         return savedUser;
       } catch (err: any) {

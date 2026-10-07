@@ -308,7 +308,7 @@ export async function syncCartToServer(
   token?: string | null,
   userId?: number | string
 ): Promise<any> {
-  if (!userId || isNaN(Number(userId)) || !token) return null;
+  if (!userId || isNaN(Number(userId)) && !token) return null;
 
   // Create new cart on backend
   try {
