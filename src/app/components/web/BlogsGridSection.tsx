@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { BlogItem, getBlogs } from "@/app/services/blogService";
-import { getFullImageUrl } from "@/app/utils/utils";
-import Loading from "@/app/components/common/Loading";
+import { BlogItem, getBlogs } from "@/services/blogService";
+import { getFullImageUrl } from "@/utils/utils";
+import Loading from "@/components/common/Loading";
 
 // Curated Devotional Sample Articles for rich fallback & instant rendering
 const fallbackDevotionalBlogs: BlogItem[] = [

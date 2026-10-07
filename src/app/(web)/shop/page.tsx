@@ -1,23 +1,23 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import PageHeader from "../../components/web/PageHeader";
-import ShopSection from "../../components/web/ShopSection";
-import Spinner from "../../components/web/Spinner";
+import PageHeader from "@/components/web/PageHeader";
+import ShopSection from "@/components/web/ShopSection";
+import Spinner from "@/components/web/Spinner";
 
 export const metadata: Metadata = {
-  title: "Shop Laddu Gopal Poshak & Shringar Collection | Makhan Chor",
+  title: "Shop Handcrafted Poshak & Kundan Shringar | Makkanchor",
   description:
-    "Browse our complete handcrafted devotional collection: Pagdi, Kundan Shringar, Designer Poshak, Flutes, and Laddu Gopal accessories.",
+    "Explore our complete sacred collection of Laddu Gopal Poshak, Designer Pagdis, Kundan Shringar sets, Jhulas, and Bansuris.",
 };
 
 export default function ShopPage() {
   return (
     <>
       <PageHeader
-        title="Our Divine Collection"
+        title="Divine Collection"
         breadcrumbs={[
           { label: "Home", href: "/" },
-          { label: "Collection", href: "/shop" },
+          { label: "Shop", href: "/shop" },
           { label: "All Items" },
         ]}
       />

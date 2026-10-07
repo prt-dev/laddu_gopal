@@ -1,15 +1,18 @@
 import type { Metadata } from "next";
-import WebLayoutClient from "../components/web/WebLayoutClient";
+import WebLayoutClient from "@/components/web/WebLayoutClient";
 import "../web.css";
-import { siteConfig } from "../config/site";
-import { WebAuthProvider } from "../context/WebAuthContext";
-import { CartProvider } from "../context/CartContext";
-import { GeneralProvider } from "../context/GeneralContext";
-import WebProtectedRoute from "../context/WebProtectedRoute";
+import { siteConfig } from "@/config/site";
+import { WebAuthProvider } from "@/context/web/WebAuthContext";
+import { CartProvider } from "@/context/web/CartContext";
+import { GeneralProvider } from "@/context/web/GeneralContext";
+import WebProtectedRoute from "@/context/web/WebProtectedRoute";
 
 export const metadata: Metadata = {
-  title: siteConfig.title,
-  description: "Makhan Chor - Supplying handcrafted Laddu Gopal Poshak, Pagdi, Kundan Shringar and devotional accessories all over the globe to Krishna Bhakts.",
+  title: {
+    default: siteConfig.title,
+    template: `%s | ${siteConfig.name}`,
+  },
+  description: siteConfig.description,
   icons: {
     icon: siteConfig.favicon,
     shortcut: siteConfig.favicon,
@@ -17,13 +20,17 @@ export const metadata: Metadata = {
   },
 };
 
-export default function WebLayout({ children }: { children: React.ReactNode }) {
+export default function WebLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <WebAuthProvider>
       <CartProvider>
         <GeneralProvider>
           <WebProtectedRoute>
-            {/* Head Stylesheet Links */}
+            {/* FontAwesome and Bootstrap Icons */}
             <link
               rel="stylesheet"
               href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
@@ -40,4 +47,3 @@ export default function WebLayout({ children }: { children: React.ReactNode }) {
     </WebAuthProvider>
   );
 }
-

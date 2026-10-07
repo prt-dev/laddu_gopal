@@ -1,13 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { CartItem, parseItemPrice } from "@/app/services/cartService";
 
 export type { CartItem as CartItemType };
 
 interface CartItemRowProps {
   item: CartItem;
-  onUpdateQuantity: (id: number | string, delta: number, variant?: string) => void;
+  onUpdateQuantity: (id: number | string, delta: number, variant?: string) => number;
   onRemove: (id: number | string, variant?: string) => void;
 }
 
@@ -17,10 +17,10 @@ export default function CartItemRow({
   onRemove,
 }: CartItemRowProps) {
   const itemId = item.product_id ?? 0;
-  const itemImg = item.img || item.image_url || "/assets/best-selling.png";
+  const itemImg = item.image_url || "/assets/best-selling.png";
   const itemName = item.name || "Sacred Item";
   const itemPrice = parseItemPrice(item.price);
-  const itemQty = Number(item.quantity) || 1;
+  const [itemQty, setItemQty] = useState(Number(item.quantity) || 1);
   const itemSize = item.variant;
 
   return (
@@ -57,7 +57,7 @@ export default function CartItemRow({
       <td className="py-3 px-4">
         <div className="flex items-center gap-1.5 bg-[#fff0ad]/40 p-1 rounded border border-[#fff0ad] w-fit">
           <button
-            onClick={() => onUpdateQuantity(itemId, -1, itemSize)}
+            onClick={() => setItemQty(onUpdateQuantity(itemId, -1, itemSize))}
             disabled={itemQty <= 1}
             className="h-6 w-6 rounded bg-white font-bold text-black hover:bg-[#d20b4f] hover:text-white disabled:opacity-40 disabled:hover:bg-white disabled:hover:text-black transition flex items-center justify-center border border-gray-200 cursor-pointer text-xs disabled:cursor-not-allowed shadow-2xs"
             type="button"
@@ -69,7 +69,7 @@ export default function CartItemRow({
             {itemQty}
           </span>
           <button
-            onClick={() => onUpdateQuantity(itemId, 1, itemSize)}
+            onClick={() => setItemQty(onUpdateQuantity(itemId, 1, itemSize))}
             className="h-6 w-6 rounded bg-white font-bold text-black hover:bg-[#d20b4f] hover:text-white transition flex items-center justify-center border border-gray-200 cursor-pointer text-xs shadow-2xs"
             type="button"
             title="Increase quantity"

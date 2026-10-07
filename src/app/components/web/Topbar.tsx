@@ -7,15 +7,15 @@ export default function Topbar() {
         {/* <div className="top-info ps-2"> */}
         <small className="me-3">
           <i className="fas fa-map-marker-alt me-2 text-secondary"></i>
-          <a href="#" className="text-white">{siteConfig.address}</a>
+          <a href="#" className="text-white">{siteConfig.contact.address}</a>
         </small>
         <small className="me-3">
           <i className="fas fa-envelope me-2 text-secondary"></i>
-          <a href={`mailto:${siteConfig.email}`} className="text-white">{siteConfig.email}</a>
+          <a href={`mailto:${siteConfig.contact.email}`} className="text-white">{siteConfig.contact.email}</a>
         </small>
         <small className="me-3">
           <i className="fas fa-phone-alt me-2 text-secondary"></i>
-          <a href={`tel:${siteConfig.phone1}`} className="text-white">{siteConfig.phone1}</a>
+          <a href={`tel:${siteConfig.contact.phone1}`} className="text-white">{siteConfig.contact.phone1}</a>
         </small>
         {/* </div> */}
         {/* <div className="top-link pe-2">

@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useCart } from "@/app/context/CartContext";
 import { ProductItem as ApiProductItem } from "@/app/services/productService";
 import { ProductItem as StaticProductItem } from "@/app/data/products";
+import { addLocalCartItem } from "@/services/cartService";
 
 export interface AddToCartButtonProps {
   productId: number | string;
@@ -34,7 +35,6 @@ export default function AddToCartButton({
   onSuccess,
   onError,
 }: AddToCartButtonProps) {
-  const { addToCart } = useCart();
   const [isAdding, setIsAdding] = useState<boolean>(false);
   const [addStatus, setAddStatus] = useState<"idle" | "success" | "error">("idle");
 
@@ -50,14 +50,13 @@ export default function AddToCartButton({
     setAddStatus("idle");
 
     try {
-      await addToCart({
-        ...(product ? (product as any) : {}),
+      addLocalCartItem({
+        id: productId,
         product_id: productId,
-        variant: variant || "Standard Size",
-        price,
-        quantity,
         name: product?.name,
-        img: product?.img || product?.image_url,
+        variant: variant || "Standard Size",
+        quantity: quantity,
+        price,
         image_url: product?.image_url || product?.img,
       });
 

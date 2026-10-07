@@ -71,11 +71,11 @@ export default function ContactSection() {
                 Contact Details :
               </h4>
               <p className="text-sm leading-[1.6] text-black mb-0">
-                <strong>Phone Number -</strong> {siteConfig.phone1}
+                <strong>Phone Number -</strong> {siteConfig.contact.phone1}
                 <br />
-                <strong>Whatsapp -</strong> {siteConfig.phone1}
+                <strong>Whatsapp -</strong> {siteConfig.contact.whatsapp || siteConfig.contact.phone1}
                 <br />
-                <strong>Email -</strong> {siteConfig.email}
+                <strong>Email -</strong> {siteConfig.contact.email}
               </p>
             </div>
 

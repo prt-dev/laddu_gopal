@@ -1,64 +1,16 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import React from "react";
 import Link from "next/link";
 import CartItemRow from "./CartItemRow";
 import { useCart } from "@/app/context/CartContext";
-import { getProductById } from "@/app/services/productService";
-import { parseItemPrice } from "@/app/services/cartService";
-import Loading from "@/app/components/common/Loading";
+import { removeLocalCartItem, updateLocalCartItemQuantity } from "@/services/cartService";
 
 export default function CartTable() {
-  const { items, isLoading, updateQuantity, removeFromCart, subtotal, addToCart } = useCart();
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const directAddedRef = useRef<boolean>(false);
+  const { items, subtotal } = useCart();
 
-  // Check if URL has direct item query param (e.g., /cart?item=1&size=Size%202)
-  useEffect(() => {
-    const urlItemId = searchParams.get("item");
-    const urlSize = searchParams.get("size");
 
-    if (urlItemId && !directAddedRef.current) {
-      directAddedRef.current = true;
-      getProductById(Number(urlItemId))
-        .then((found) => {
-          if (found) {
-            const foundPrice = parseItemPrice(found.price);
-            const defaultSize = (found.sizes && found.sizes[0]) || "Size 0";
-            addToCart({
-              ...found,
-              product_id: found.id || Number(urlItemId),
-              variant: urlSize || defaultSize,
-              price: foundPrice,
-              quantity: 1,
-              name: found.name,
-              img: found.img || found.image_url,
-              image_url: found.image_url || found.img,
-            });
-            // Clean up the URL parameter without page reload
-            router.replace("/cart");
-          }
-        })
-        .catch((e) => console.error("Error adding direct preview item to cart:", e));
-    }
-  }, [searchParams, addToCart, router]);
-
-  // 1. Loading State with Logo Loader
-  if (isLoading) {
-    return (
-      <div className="py-16 flex flex-col items-center justify-center rounded-lg border border-[#fff0ad] bg-white shadow-xs">
-        <Loading
-          variant="container"
-          size="md"
-          message="Loading your devotional basket..."
-        />
-      </div>
-    );
-  }
-
-  // 2. Empty Basket / Not Found State
+  // 1. Empty Basket / Not Found State
   if (items.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-12 sm:p-16 rounded-lg border border-[#fff0ad] bg-[#fff0ad]/20 text-center shadow-xs">
@@ -101,8 +53,8 @@ export default function CartTable() {
               <CartItemRow
                 key={`${item.product_id}-${item.variant || ""}`}
                 item={item}
-                onUpdateQuantity={updateQuantity}
-                onRemove={removeFromCart}
+                onUpdateQuantity={updateLocalCartItemQuantity}
+                onRemove={removeLocalCartItem}
               />
             ))}
           </tbody>
@@ -136,7 +88,7 @@ export default function CartTable() {
             <div className="space-y-2 text-xs sm:text-sm text-black font-bold">
               <div className="flex justify-between">
                 <span>Subtotal:</span>
-                <span>₹{subtotal.toFixed(2)}</span>
+                <span>₹{subtotal?.toFixed(2)}</span>
               </div>
 
               <div className="flex justify-between">
@@ -147,7 +99,7 @@ export default function CartTable() {
               <div className="border-t border-[#d20b4f]/20 pt-2 flex justify-between items-center text-sm">
                 <span className="text-black">Total:</span>
                 <span className="text-[#d20b4f] text-base font-extrabold">
-                  ₹{subtotal.toFixed(2)}
+                  ₹{subtotal?.toFixed(2)}
                 </span>
               </div>
             </div>

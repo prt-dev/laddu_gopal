@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import PageHeader from "../../components/web/PageHeader";
-import CartTable from "../../components/web/CartTable";
+import PageHeader from "@/components/web/PageHeader";
+import CartTable from "@/components/web/CartTable";
 
 export const metadata: Metadata = {
-  title: "Devotional Basket & Cart | Makhan Chor - Laddu Gopal",
+  title: "Shopping Basket & Cart | Makkanchor",
   description:
-    "Review your selected Laddu Gopal poshak, pagdi, and kundan shringar items.",
+    "Review your selected Laddu Gopal poshak, pagdi, and kundan shringar items in your basket.",
 };
 
 export default function CartPage() {

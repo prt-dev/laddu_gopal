@@ -1,31 +1,16 @@
 import { BASE_URL } from "@/app/services/authService";
 import localCategories from "@/app/data/categories.json";
+import {
+  CategoryItem,
+  GetCategoriesParams,
+  GetCategoriesResponse,
+} from "@/app/types/category";
 
-export interface CategoryItem {
-  id?: number;
-  name?: string;
-  slug?: string;
-  description?: string;
-  image_url?: string;
-  parent_id?: number | null;
-  status?: number | string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface GetCategoriesParams {
-  page?: number;
-  limit?: number;
-  search?: string;
-  parent_id?: number;
-  status?: number;
-}
-
-export interface GetCategoriesResponse {
-  total: number;
-  categories: CategoryItem[];
-  items: CategoryItem[];
-}
+export {
+  type CategoryItem,
+  type GetCategoriesParams,
+  type GetCategoriesResponse,
+};
 
 function getStoredToken(): string | undefined {
   if (typeof window === "undefined") return undefined;

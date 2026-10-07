@@ -3,9 +3,9 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useWebAuth } from "@/app/context/WebAuthContext";
-import { siteConfig } from "@/app/config/site";
-import { isValidEmail } from "@/app/utils/utils";
+import { useWebAuth } from "@/context/WebAuthContext";
+import { siteConfig } from "@/config/site";
+import { isValidEmail } from "@/utils/utils";
 
 export default function WebUserLoginPageComponent() {
   const [email, setEmail] = useState("");

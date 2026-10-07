@@ -1,34 +1,7 @@
 import { BASE_URL } from "@/app/services/authService";
+import { BlogItem, GetBlogsParams } from "@/app/types/blog";
 
-export interface BlogItem {
-  id?: number;
-  client_id?: number;
-  author_id?: number;
-  title?: string;
-  slug?: string;
-  excerpt?: string;
-  content?: string;
-  featured_image?: string;
-  status?: number | string;
-  published_at?: string;
-  meta_title?: string;
-  meta_description?: string;
-  canonical_url?: string;
-  og_title?: string;
-  og_description?: string;
-  og_image?: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface GetBlogsParams {
-  page?: number;
-  limit?: number;
-  search?: string;
-  client_id?: number;
-  author_id?: number;
-  status?: number;
-}
+export type { BlogItem, GetBlogsParams };
 
 export async function getBlogs(
   { page = 1, limit = 10, search = "", client_id, author_id, status }: GetBlogsParams = {},

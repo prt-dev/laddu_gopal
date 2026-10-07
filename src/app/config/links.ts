@@ -1,6 +1,6 @@
 /**
  * Comprehensive Configuration of all Web Links & Routes
- * Makhan Chor - Laddu Gopal Devotional Store
+ * Makkanchor - Laddu Gopal Devotional Store
  */
 
 export interface WebLinkItem {
@@ -20,7 +20,7 @@ export const NAV_LINKS: WebLinkItem[] = [
     name: "Home",
     href: "/",
     category: "main",
-    description: "Makhan Chor Homepage with featured collections and bestsellers",
+    description: "Makkanchor Homepage with featured collections and bestsellers",
     isPublic: true,
   },
   {
@@ -156,7 +156,7 @@ export const AUTH_LINKS: WebLinkItem[] = [
     name: "Create Account",
     href: "/register",
     category: "auth",
-    description: "Join Makhan Chor devotee family",
+    description: "Join Makkanchor devotee family",
     isPublic: true,
   },
   {

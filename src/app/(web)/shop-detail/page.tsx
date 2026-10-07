@@ -1,27 +1,26 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import PageHeader from "../../components/web/PageHeader";
-import ShopDetailClient from "../../components/web/ShopDetailClient";
-import Spinner from "../../components/web/Spinner";
+import PageHeader from "@/components/web/PageHeader";
+import ShopDetailClient from "@/components/web/ShopDetailClient";
+import Spinner from "@/components/web/Spinner";
 
 export const metadata: Metadata = {
-  title: "Laddu Gopal Item Details | Makhan Chor",
+  title: "Item Details & Specifications | Makkanchor",
   description:
-    "View full details, size options, embroidery specifications, and devotee reviews for handcrafted Laddu Gopal items.",
+    "View full specifications, deity size charts, embroidery details, and pricing for handcrafted Laddu Gopal items.",
 };
 
 export default function ShopDetailPage() {
   return (
     <>
       <PageHeader
-        title="Item Details &amp; Specifications"
+        title="Product Details"
         breadcrumbs={[
           { label: "Home", href: "/" },
-          { label: "Collection", href: "/shop" },
-          { label: "Item Details" },
+          { label: "Shop", href: "/shop" },
+          { label: "Product" },
         ]}
       />
-
       <Suspense
         fallback={
           <div className="py-20 flex justify-center items-center">

@@ -1,25 +1,7 @@
 import { BASE_URL } from "@/app/services/authService";
+import { ClientItem, GetClientsParams } from "@/app/types/client";
 
-export interface ClientItem {
-  id?: number;
-  name?: string;
-  website_name?: string;
-  website_url?: string;
-  domain?: string;
-  logo?: string;
-  default_meta_title?: string;
-  default_meta_description?: string;
-  status?: number | string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface GetClientsParams {
-  page?: number;
-  limit?: number;
-  search?: string;
-  status?: number;
-}
+export type { ClientItem, GetClientsParams };
 
 export async function getClients(
   { page = 1, limit = 10, search = "", status }: GetClientsParams = {},

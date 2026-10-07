@@ -11,33 +11,24 @@ import {
 } from "react";
 
 import {
-  loginApi,
-  registerApi,
   User,
   LoginCredentials,
   RegisterData,
-} from "@/app/services/authService";
+  WebUser,
+  loginUser,
+  WebAuthContextType,
+} from "@/app/types/auth";
+import { loginApi, registerApi } from "@/app/services/authService";
 import { getUserProfileApi } from "@/app/services/userService";
 
-// Re-export / alias for backward compatibility
-export type WebUser = User;
-export type loginUser = LoginCredentials;
-
-interface WebAuthContextType {
-  user: User | null;
-  token: string | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  login: (userData: LoginCredentials) => Promise<void>;
-  register: (userData: RegisterData | User) => Promise<void>;
-  logout: () => void;
-  updateProfile: (partialData: Partial<User>) => void;
-}
+export type { WebUser, loginUser, WebAuthContextType };
 
 const STORAGE_KEYS = {
   USER: "web_customer_user",
   TOKEN: "web_customer_token",
 } as const;
+
+const USER_STORAGE_EVENT = "USER_DATA";
 
 const WebAuthContext = createContext<WebAuthContextType | undefined>(
   undefined
@@ -134,8 +125,8 @@ export function WebAuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     setUser(null);
     setToken(null);
-    localStorage.removeItem(STORAGE_KEYS.USER);
-    localStorage.removeItem(STORAGE_KEYS.TOKEN);
+    localStorage.clear();
+    router.push("/");
   }, []);
 
   const updateProfile = useCallback((partialData: Partial<User>) => {
@@ -151,6 +142,7 @@ export function WebAuthProvider({ children }: { children: ReactNode }) {
     <WebAuthContext.Provider
       value={{
         user,
+        setUser,
         token,
         isAuthenticated: !!user,
         isLoading,

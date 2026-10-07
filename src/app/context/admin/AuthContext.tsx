@@ -10,27 +10,15 @@ import {
     useCallback,
 } from "react";
 import {
-    loginApi,
     User,
     Role,
     LoginCredentials,
-} from "@/app/services/authService";
+    AuthContextType,
+} from "@/app/types/auth";
+import { loginApi } from "@/app/services/authService";
 import { getUserProfileApi } from "@/app/services/userService";
 
-export type { User, Role, LoginCredentials };
-
-interface AuthContextType {
-    user: User | null;
-    token: string | null;
-    isAuthenticated: boolean;
-    isLoading: boolean;
-    login: (userData: LoginCredentials) => Promise<void>;
-    logout: () => void;
-    getUser: (authToken: string) => Promise<User | null>;
-    // updateUser: (partialData: Partial<User>) => void;
-    hasRole: (roles: (Role | string) | (Role | string)[]) => boolean;
-    hasPermission: (permission: string) => boolean;
-}
+export type { User, Role, LoginCredentials, AuthContextType };
 
 const STORAGE_KEYS = {
     USER: "saas_auth_user",

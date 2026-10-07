@@ -2,9 +2,9 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { siteConfig } from "@/app/config/site";
-import { isValidEmail } from "@/app/utils/utils";
-import { useWebAuth } from "@/app/context/WebAuthContext";
+import { siteConfig } from "@/config/site";
+import { isValidEmail } from "@/utils/utils";
+import { useWebAuth } from "@/context/WebAuthContext";
 
 export default function WebUserRegisterPageComponent() {
   const [fullName, setFullName] = useState("");

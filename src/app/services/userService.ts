@@ -1,26 +1,17 @@
-import { BASE_URL } from "@/app/services/authService";
+import { BASE_URL, User } from "@/app/services/authService";
+import {
+    GetUsersParams,
+    UserSavePayload,
+    FetchedUserDetails,
+} from "@/app/types/user";
+import { ClientItem } from "@/app/types/client";
 
-
-
-export interface GetUsersParams {
-    page?: number;
-    limit?: number;
-    search?: string;
-    excludeRoles?: number[];
-}
-
-export interface ClientItem {
-    name?: string;
-    title?: string;
-    email?: string;
-    phone?: string;
-    role?: string;
-    amount?: string | number;
-    avatar?: string;
-    status?: string | number;
-    statusBadge?: string;
-    date?: string;
-}
+export type {
+    GetUsersParams,
+    ClientItem,
+    UserSavePayload,
+    FetchedUserDetails,
+};
 
 export async function getUsers({
     page = 1,
@@ -83,26 +74,6 @@ export async function getUserProfileApi(token: string) {
     return response.json();
 }
 
-export interface UserSavePayload {
-    id?: number | string;
-    email?: string;
-    firstname?: string;
-    lastname?: string;
-    name?: string;
-    phone?: string;
-    username?: string;
-    password?: string;
-    role_id?: number;
-    status?: number;
-    address?: string;
-    city?: string;
-    state?: string;
-    pincode?: string;
-    notes?: string;
-    additional_details?: string;
-    [key: string]: unknown;
-}
-
 /**
  * Save / Upsert user profile & billing details
  * Endpoint: POST /api/v1/users/save
@@ -143,26 +114,10 @@ export async function saveUserApi(
 
 export const DEVOTEE_BILLING_STORAGE_KEY = "devotee_billing_details";
 
-export interface FetchedUserDetails {
-    id?: number | string;
-    name?: string;
-    firstname?: string;
-    lastname?: string;
-    email?: string;
-    phone?: string;
-    address?: string;
-    city?: string;
-    state?: string;
-    pincode?: string;
-    notes?: string;
-    additional_details?: any;
-    [key: string]: unknown;
-}
-
 export async function fetchUserDetailsByPhoneOrEmail(
     params: { phone?: string; email?: string },
     token?: string | null
-): Promise<FetchedUserDetails | null> {
+): Promise<User | null> {
     const query = new URLSearchParams();
     if (params.phone?.trim()) query.append("phone", params.phone.trim());
     if (params.email?.trim()) query.append("email", params.email.trim());

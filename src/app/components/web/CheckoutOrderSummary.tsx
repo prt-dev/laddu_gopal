@@ -13,15 +13,15 @@ import {
   verifyRazorpayPaymentApi,
 } from "@/app/services/paymentService";
 import Loading from "@/app/components/common/Loading";
-import { FetchedUserDetails } from "@/app/services/userService";
-import { updateCartStatusApi, CART_STATUS, parseItemPrice, extractCartId } from "@/app/services/cartService";
+import { updateCartStatusApi, CART_STATUS, parseItemPrice, clearLocalCartItems } from "@/app/services/cartService";
+import { User } from "@/types";
 
 const cleanupRazorpayDOM = () => {
   if (typeof document === "undefined") return;
   try {
     const containers = document.querySelectorAll(".razorpay-container");
     containers.forEach((el) => el.remove());
-  } catch {}
+  } catch { }
 };
 
 let razorpayScriptPromise: Promise<boolean> | null = null;
@@ -54,27 +54,12 @@ const loadRazorpayScript = (): Promise<boolean> => {
 };
 
 export default function CheckoutOrderSummary() {
-  const {
-    items,
-    isLoading,
-    subtotal,
-    clearCart,
-    cartId,
-    cart_id,
-    getLatestCartByUserId,
-    createOrUpdateCart,
-  } = useCart();
-  const { token, user } = useWebAuth();
+
+  const { items, subtotal } = useCart();
+  const { token, user, isLoading } = useWebAuth();
   const {
     formData,
-    fetchedUser,
-    fetchDevoteeUser,
-    isBillingFormValid,
     missingMandatoryFields,
-    resolvedAddress,
-    resolvedPhone,
-    resolvedEmail,
-    devoteeName,
     focusFirstMissingField,
     handleSaveDetails,
   } = useCheckout();
@@ -103,7 +88,7 @@ export default function CheckoutOrderSummary() {
     setIsPlacingOrder(true);
 
     // 1. Check mandatory inputs using billing form flag
-    if (!isBillingFormValid) {
+    if (missingMandatoryFields.length) {
       setBillingError(
         `Please provide complete billing details before placing order: Missing or invalid ${missingMandatoryFields.join(", ")}.`
       );
@@ -113,22 +98,11 @@ export default function CheckoutOrderSummary() {
     }
 
     try {
-      const phone = formData.phone.trim();
-      const email = formData.email.trim();
 
-      // Step 1: Look up existing user by phone/email to set fetchedUser state before saving
-      if (phone || email) {
-        try {
-          await fetchDevoteeUser(phone, email);
-        } catch (fetchErr) {
-          console.warn("Could not fetch user details before saving:", fetchErr);
-        }
-      }
 
-      // Step 2: Save or update billing form data on server
-      let activeUser: FetchedUserDetails | null = null;
+      let activeUser: User | null = null;
       try {
-        activeUser = await handleSaveDetails(token || undefined);
+        activeUser = await handleSaveDetails(token || '');
       } catch (saveErr) {
         console.warn("Could not save billing details to server:", saveErr);
       }
@@ -139,27 +113,14 @@ export default function CheckoutOrderSummary() {
         return;
       }
 
-      // Step 3: Add or update cart data on server with activeUser.id
-      let resolvedCartId = cartId || cart_id;
-      try {
-        const syncdCart = await createOrUpdateCart(activeUser.id);
-        const syncdId = extractCartId(syncdCart);
-        if (syncdId) {
-          resolvedCartId = syncdId;
-        }
-      } catch (cartErr) {
-        console.warn("createOrUpdateCart on order place error:", cartErr);
-      }
-      // setIsPlacingOrder(false);
-      // return;
-      if (!resolvedCartId) {
-        setBillingError("Failed to create or update cart. Please try again.");
+      if (items.length == 0) {
+        setBillingError("Cart is empty. Please add items to your cart.");
         setIsPlacingOrder(false);
         return;
       }
+      window.dispatchEvent(new CustomEvent('cart_updated'));
 
-      // Step 3: Then place order
-      const totalOrderAmount = Number(subtotal.toFixed(2));
+      const totalOrderAmount = Number(subtotal?.toFixed(2));
 
       if (paymentMethod === "cod") {
         try {
@@ -168,21 +129,15 @@ export default function CheckoutOrderSummary() {
               amount: totalOrderAmount,
               currency: "INR",
               status: "pending",
-              phone: resolvedPhone || phone,
-              email: resolvedEmail || email,
-              username: devoteeName,
-              user_id: Number(activeUser.id),
-              cart_id: resolvedCartId,
-              products: items && items.length > 0 ? items : undefined,
+              phone: formData.phone,
+              email: formData.email,
+              products: items,
             },
             token || null
           );
 
           try {
-            if (resolvedCartId) {
-              await updateCartStatusApi(resolvedCartId, CART_STATUS.COMPLETED, token || undefined);
-            }
-            await clearCart();
+            clearLocalCartItems();
           } catch (clearErr) {
             console.warn("Could not clear cart after COD order:", clearErr);
           } finally {
@@ -190,9 +145,6 @@ export default function CheckoutOrderSummary() {
           }
         } catch (codErr: any) {
           console.error("Failed to place Cash on Delivery order:", codErr);
-          if (resolvedCartId) {
-            await updateCartStatusApi(resolvedCartId, CART_STATUS.FAILED, token || undefined);
-          }
           setBillingError(codErr?.message || "Could not place Cash on Delivery order. Please try again.");
         } finally {
           setIsPlacingOrder(false);
@@ -221,12 +173,9 @@ export default function CheckoutOrderSummary() {
             amount: totalOrderAmount,
             currency: "INR",
             status: "pending",
-            phone: resolvedPhone || phone,
-            email: resolvedEmail || email,
-            username: devoteeName,
-            user_id: Number(activeUser.id),
-            cart_id: resolvedCartId,
-            products: items && items.length > 0 ? items : undefined,
+            phone: formData.phone,
+            email: formData.email,
+            products: items,
           },
           token || null
         );
@@ -263,12 +212,12 @@ export default function CheckoutOrderSummary() {
         description: `Sacred Order #${createdOrder.order_number || createdOrder.id}`,
         image: "/assets/best-selling.png",
         prefill: {
-          name: devoteeName,
-          email: resolvedEmail,
-          contact: resolvedPhone,
+          name: formData.firstName + " " + formData.lastName,
+          email: formData.email,
+          contact: formData.phone,
         },
         notes: {
-          address: resolvedAddress,
+          address: formData.address || "",
           order_id: String(createdOrder.id || ""),
           order_number: createdOrder.order_number || "",
         },
@@ -279,7 +228,7 @@ export default function CheckoutOrderSummary() {
           console.log("razorpay handler response---->", response);
           try {
             rzpInstance?.close();
-          } catch {}
+          } catch { }
           cleanupRazorpayDOM();
 
           setIsPlacingOrder(true);
@@ -309,10 +258,7 @@ export default function CheckoutOrderSummary() {
             }
 
             try {
-              if (resolvedCartId) {
-                await updateCartStatusApi(resolvedCartId, CART_STATUS.COMPLETED, token || undefined);
-              }
-              await clearCart();
+              clearLocalCartItems();
             } catch (cartErr) {
               console.warn("Could not clear cart:", cartErr);
             } finally {
@@ -323,9 +269,7 @@ export default function CheckoutOrderSummary() {
             }
           } catch (payErr: any) {
             console.warn("Payment verification backend sync:", payErr);
-            if (resolvedCartId) {
-              await updateCartStatusApi(resolvedCartId, CART_STATUS.FAILED, token || undefined);
-            }
+
             setBillingError(payErr?.message || "Payment verification failed. Please contact support.");
           } finally {
             setIsPlacingOrder(false);
@@ -338,7 +282,7 @@ export default function CheckoutOrderSummary() {
             setIsPlacingOrder(false);
             try {
               rzpInstance?.close();
-            } catch {}
+            } catch { }
             cleanupRazorpayDOM();
           },
         },
@@ -350,12 +294,9 @@ export default function CheckoutOrderSummary() {
           console.error("Razorpay payment failed:", resp.error);
           try {
             rzpInstance?.close();
-          } catch {}
+          } catch { }
           cleanupRazorpayDOM();
 
-          if (resolvedCartId) {
-            await updateCartStatusApi(resolvedCartId, CART_STATUS.FAILED, token || undefined);
-          }
           setBillingError(`Payment was declined: ${resp.error?.description || "Transaction failed"}`);
           setIsPlacingOrder(false);
         });
@@ -488,7 +429,7 @@ export default function CheckoutOrderSummary() {
         {items.map((item, i) => {
           const itemPrice = parseItemPrice(item.price);
           const itemQty = Number(item.quantity) || 1;
-          const itemImg = item.img || item.image_url || "/assets/best-selling.png";
+          const itemImg = item.image_url || "/assets/best-selling.png";
           const itemName = item.name || "Sacred Item";
           const itemVariant = item.variant;
 
@@ -531,7 +472,7 @@ export default function CheckoutOrderSummary() {
       <div className="mt-5 border-t border-[#d20b4f]/20 pt-3 space-y-1.5 text-xs text-black font-bold">
         <div className="flex justify-between">
           <span>Subtotal:</span>
-          <span>₹{subtotal.toFixed(2)}</span>
+          <span>₹{subtotal?.toFixed(2)}</span>
         </div>
         <div className="flex justify-between">
           <span>Delivery:</span>
@@ -540,7 +481,7 @@ export default function CheckoutOrderSummary() {
         <div className="border-t border-[#d20b4f]/20 pt-2 flex justify-between items-center text-sm">
           <span className="text-black">Total Payable:</span>
           <span className="text-[#d20b4f] text-base font-extrabold">
-            ₹{subtotal.toFixed(2)}
+            ₹{subtotal?.toFixed(2)}
           </span>
         </div>
       </div>

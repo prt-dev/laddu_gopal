@@ -1,4 +1,8 @@
+"use client";
+
+import React from "react";
 import Link from "next/link";
+import { useGeneral } from "@/context/web/GeneralContext";
 
 export interface FeaturedProductItem {
   img: string;
@@ -19,15 +23,39 @@ const defaultFeaturedProducts: FeaturedProductItem[] = [
 ];
 
 export default function ShopSidebarFeatured({
-  products = defaultFeaturedProducts,
+  products: propProducts,
 }: ShopSidebarFeaturedProps) {
+  const { products: contextProducts } = useGeneral();
+
+  // Use the first 3 products from GeneralContext, or fallback to prop/defaults
+  const featuredItems: FeaturedProductItem[] =
+    propProducts ||
+    (contextProducts && contextProducts.length > 0
+      ? contextProducts.slice(0, 3).map((p) => {
+          const firstSize = p.sizes?.[0] || "Size 0";
+          const basePrice =
+            typeof p.price === "number"
+              ? p.price
+              : parseFloat(String(p.price || 0)) || 0;
+          const oldPriceVal = (p as any).original_price || (p as any).oldPrice;
+
+          return {
+            img: p.img || p.image_url || "/assets/best-selling.png",
+            name: p.name || "Sacred Item",
+            price: `₹${basePrice}`,
+            oldPrice: oldPriceVal ? `₹${oldPriceVal}` : undefined,
+            href: `/shop-detail?id=${p.id || 1}&size=${encodeURIComponent(firstSize)}`,
+          };
+        })
+      : defaultFeaturedProducts);
+
   return (
     <div className="rounded border border-[#fff0ad] bg-white p-4">
       <h4 className="heading-font text-base font-bold text-[#d20b4f] mb-3 border-b border-[#d20b4f]/20 pb-2">
         Featured Shringar
       </h4>
       <div className="space-y-3">
-        {products.map((p, i) => (
+        {featuredItems.map((p, i) => (
           <Link
             key={i}
             href={p.href || "/shop-detail"}

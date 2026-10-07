@@ -1,17 +1,15 @@
-import Hero from "../components/web/Hero";
-import TopSelling from "../components/web/TopSelling";
-import AboutSection from "../components/web/AboutSection";
-import PagdiCollection from "../components/web/PagdiCollection";
-import KundanCollection from "../components/web/KundanCollection";
+import Hero from "@/components/web/Hero";
+import AboutSection from "@/components/web/AboutSection";
+import ProductCollection from "@/components/web/ProductCollection";
 
 export default function HomePage() {
   return (
     <>
       <Hero />
-      <TopSelling />
+      <ProductCollection type="top-selling" />
       <AboutSection />
-      <PagdiCollection />
-      <KundanCollection />
+      <ProductCollection type="pagdi" />
+      <ProductCollection type="kundan" />
     </>
   );
 }

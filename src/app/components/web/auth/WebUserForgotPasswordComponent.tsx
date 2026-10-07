@@ -2,8 +2,8 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { siteConfig } from "@/app/config/site";
-import { isValidEmail } from "@/app/utils/utils";
+import { siteConfig } from "@/config/site";
+import { isValidEmail } from "@/utils/utils";
 
 export default function WebUserForgotPasswordComponent() {
   const [email, setEmail] = useState("");

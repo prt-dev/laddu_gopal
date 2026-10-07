@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
-import { BlogItem } from "@/app/services/blogService";
-import { getFullImageUrl } from "@/app/utils/utils";
+import { BlogItem } from "@/services/blogService";
+import { getFullImageUrl } from "@/utils/utils";
 
 interface RelatedBlogsProps {
   blogs?: BlogItem[];

@@ -6,54 +6,22 @@ import React, {
   useState,
   useEffect,
   useCallback,
-  useMemo,
   ReactNode,
 } from "react";
+import { GeneralContextType } from "@/app/types/general";
 import { getProducts, ProductItem } from "@/app/services/productService";
 import { getCategories, CategoryItem } from "@/app/services/categoryService";
 import { useCart } from "@/app/context/CartContext";
-import { CartItem } from "@/app/services/cartService";
+import {
+  CartItem,
+  addLocalCartItem,
+  updateLocalCartItemQuantity,
+  removeLocalCartItem,
+  clearLocalCartItems,
+  getLocalCartItems,
+} from "@/app/services/cartService";
 
-export interface GeneralContextType {
-  // Products
-  products: ProductItem[];
-  isLoadingProducts: boolean;
-  refreshProducts: () => Promise<void>;
-  topSellingProducts: ProductItem[];
-  pagdiProducts: ProductItem[];
-  kundanProducts: ProductItem[];
-  getProductById: (id: string | number) => ProductItem | undefined;
-  getProductsByCategory: (categoryIdOrName: string | number) => ProductItem[];
-
-  // Categories
-  categories: CategoryItem[];
-  isLoadingCategories: boolean;
-  refreshCategories: () => Promise<void>;
-
-  // Cart (shared from CartContext)
-  cartItems: CartItem[];
-  cartCount: number;
-  cartSubtotal: number;
-  isCartLoading: boolean;
-  cartId?: number;
-  cart_id?: number;
-  addToCart: (payload: Partial<CartItem>) => Promise<void>;
-  updateCartQuantity: (
-    id: number | string,
-    deltaOrQty: number,
-    variant?: string,
-    isAbsolute?: boolean
-  ) => Promise<void>;
-  removeFromCart: (id: number | string, variant?: string) => Promise<void>;
-  clearCart: () => Promise<void>;
-  refreshCart: () => Promise<void>;
-  getLatestCartByUserId: (userId?: number | string) => Promise<any>;
-  createOrUpdateCart: (userIdOverride?: number | string) => Promise<any>;
-
-  // Combined Status & Actions
-  isLoading: boolean;
-  refreshAll: () => Promise<void>;
-}
+export type { GeneralContextType };
 
 const GeneralContext = createContext<GeneralContextType | undefined>(undefined);
 
@@ -61,18 +29,9 @@ export function GeneralProvider({ children }: { children: ReactNode }) {
   const {
     items: cartItems,
     cartCount,
-    subtotal: cartSubtotal,
-    isLoading: isCartLoading,
-    cartId,
-    cart_id,
-    addToCart,
-    updateQuantity: updateCartQuantity,
-    removeFromCart,
-    clearCart,
-    refreshCart,
-    getLatestCartByUserId,
-    createOrUpdateCart,
+    subtotal,
   } = useCart();
+  const cartSubtotal = subtotal || 0;
 
   const [products, setProducts] = useState<ProductItem[]>([]);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
@@ -86,7 +45,7 @@ export function GeneralProvider({ children }: { children: ReactNode }) {
       const res = await getProducts({ limit: 100 });
       setProducts(res.products || []);
     } catch (err) {
-      console.warn("GeneralContext: Failed to fetch products:", err);
+      console.warn("Failed to fetch products:", err);
     } finally {
       setIsLoadingProducts(false);
     }
@@ -99,10 +58,53 @@ export function GeneralProvider({ children }: { children: ReactNode }) {
       const res = await getCategories({ limit: 100 });
       setCategories(res.categories || []);
     } catch (err) {
-      console.warn("GeneralContext: Failed to fetch categories:", err);
+      console.warn("Failed to fetch categories:", err);
     } finally {
       setIsLoadingCategories(false);
     }
+  }, []);
+
+  // Cart action helpers
+  const addToCart = useCallback(async (payload: Partial<CartItem>) => {
+    addLocalCartItem(payload);
+  }, []);
+
+  const updateCartQuantity = useCallback(
+    async (
+      id: number | string,
+      deltaOrQty: number,
+      variant?: string,
+      isAbsolute?: boolean
+    ) => {
+      updateLocalCartItemQuantity(id, deltaOrQty, variant, isAbsolute);
+    },
+    []
+  );
+
+  const removeFromCart = useCallback(
+    async (id: number | string, variant?: string) => {
+      removeLocalCartItem(id, variant);
+    },
+    []
+  );
+
+  const clearCart = useCallback(async () => {
+    clearLocalCartItems();
+  }, []);
+
+  const refreshCart = useCallback(async () => {
+    getLocalCartItems();
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("cart_updated"));
+    }
+  }, []);
+
+  const getLatestCartByUserId = useCallback(async () => {
+    return null;
+  }, []);
+
+  const createOrUpdateCart = useCallback(async () => {
+    return null;
   }, []);
 
   // 3. Combined Refresh
@@ -110,7 +112,7 @@ export function GeneralProvider({ children }: { children: ReactNode }) {
     await Promise.all([refreshProducts(), refreshCategories(), refreshCart()]);
   }, [refreshProducts, refreshCategories, refreshCart]);
 
-  // 4. Initial Fetch on Mount (Once across the entire app)
+  // 4. Initial Fetch on Mount
   useEffect(() => {
     let isMounted = true;
 
@@ -125,7 +127,7 @@ export function GeneralProvider({ children }: { children: ReactNode }) {
           setCategories(catRes.categories || []);
         }
       } catch (err) {
-        console.warn("GeneralContext: Initial store load error:", err);
+        console.warn("Initial store load error:", err);
       } finally {
         if (isMounted) {
           setIsLoadingProducts(false);
@@ -141,31 +143,28 @@ export function GeneralProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // 5. Memoized Product Subsets
-  const topSellingProducts = useMemo(() => {
-    return products.slice(0, 4);
-  }, [products]);
+  // 5. Dynamic Collection Products Resolver using dynamic key/category matching
+  const getCollectionProducts = useCallback(
+    (keyOrCategory?: string, limit?: number): ProductItem[] => {
+      const q = (keyOrCategory || "").toLowerCase().trim();
 
-  const pagdiProducts = useMemo(() => {
-    const filtered = products.filter(
-      (p) =>
-        (p.category || "").toLowerCase() === "pagdi" ||
-        p.category_id === 1 ||
-        p.category_id === 2 ||
-        (p.name || "").toLowerCase().includes("pagdi")
-    );
-    return filtered.slice(0, 4);
-  }, [products]);
+      let filtered: ProductItem[];
+      if (!q || q === "top-selling" || q === "topselling" || q === "all") {
+        filtered = products;
+      } else {
+        filtered = products.filter(
+          (p) =>
+            String(p.category_id) === q ||
+            (p.category || "").toLowerCase().trim() === q ||
+            (p.category || "").toLowerCase().includes(q) ||
+            (p.name || "").toLowerCase().includes(q)
+        );
+      }
 
-  const kundanProducts = useMemo(() => {
-    const filtered = products.filter(
-      (p) =>
-        (p.category || "").toLowerCase().includes("kundan") ||
-        p.category_id === 3 ||
-        (p.name || "").toLowerCase().includes("kundan")
-    );
-    return filtered.slice(0, 4);
-  }, [products]);
+      return limit ? filtered.slice(0, limit) : filtered;
+    },
+    [products]
+  );
 
   // 6. Helpers
   const getProductById = useCallback(
@@ -181,23 +180,16 @@ export function GeneralProvider({ children }: { children: ReactNode }) {
       if (typeof categoryIdOrName === "number") {
         return products.filter((p) => p.category_id === categoryIdOrName);
       }
-      const searchStr = categoryIdOrName.toLowerCase().trim();
-      return products.filter(
-        (p) =>
-          String(p.category_id) === searchStr ||
-          (p.category || "").toLowerCase().trim() === searchStr
-      );
+      return getCollectionProducts(categoryIdOrName);
     },
-    [products]
+    [getCollectionProducts, products]
   );
 
   const value: GeneralContextType = {
     products,
     isLoadingProducts,
     refreshProducts,
-    topSellingProducts,
-    pagdiProducts,
-    kundanProducts,
+    getCollectionProducts,
     getProductById,
     getProductsByCategory,
     categories,
@@ -206,9 +198,9 @@ export function GeneralProvider({ children }: { children: ReactNode }) {
     cartItems,
     cartCount,
     cartSubtotal,
-    isCartLoading,
-    cartId,
-    cart_id,
+    isCartLoading: false,
+    cartId: undefined,
+    cart_id: undefined,
     addToCart,
     updateCartQuantity,
     removeFromCart,

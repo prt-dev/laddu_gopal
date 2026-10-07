@@ -162,7 +162,7 @@ export default function ProductDetail({ productId, initialSize }: ProductDetailP
                 href="/cart"
                 className="rounded border border-[#d20b4f] px-5 py-2.5 text-sm font-bold text-[#d20b4f] hover:bg-[#fff0ad]/50 transition no-underline text-center inline-flex items-center gap-1.5"
               >
-                View Basket
+                View Cart
               </Link>
             </div>
           </div>

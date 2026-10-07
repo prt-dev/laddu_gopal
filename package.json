@@ -12,11 +12,13 @@
     "@netlify/plugin-nextjs": "^5.15.13",
     "axios": "^1.19.0",
     "bootstrap": "^5.3.8",
+    "clsx": "^2.1.1",
     "cors": "^2.8.6",
     "jquery": "^4.0.0",
     "next": "16.2.12",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "tailwind-merge": "^3.7.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

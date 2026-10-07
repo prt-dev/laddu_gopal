@@ -15,11 +15,11 @@ export default function Footer() {
           </h2>
 
           <p className="mt-4 text-sm leading-[1.6] text-black">
-            <strong>Phone:</strong> {siteConfig.phone1}
+            <strong>Phone:</strong> {siteConfig.contact.phone1}
             <br />
-            <strong>WhatsApp:</strong> {siteConfig.phone1}
+            <strong>WhatsApp:</strong> {siteConfig.contact.whatsapp || siteConfig.contact.phone1}
             <br />
-            <strong>Email:</strong> {siteConfig.email}
+            <strong>Email:</strong> {siteConfig.contact.email}
           </p>
         </div>
 

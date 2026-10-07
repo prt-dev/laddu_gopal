@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { siteConfig } from "../../config/site";
-import { useWebAuth } from "@/app/context/WebAuthContext";
-import { useGeneral } from "@/app/context/GeneralContext";
+import { useWebAuth } from "@/context/web/WebAuthContext";
+import { useGeneral } from "@/context/web/GeneralContext";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -103,11 +103,10 @@ export default function Navbar() {
 
             <Link
               href="/blogs"
-              className={`transition hover:text-black no-underline ${
-                pathname === "/blogs" || pathname === "/blog" || pathname === "/blog-preview"
-                  ? "text-black"
-                  : ""
-              }`}
+              className={`transition hover:text-black no-underline ${pathname === "/blogs" || pathname === "/blog" || pathname === "/blog-preview"
+                ? "text-black"
+                : ""
+                }`}
             >
               Blogs
             </Link>
