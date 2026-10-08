@@ -317,7 +317,7 @@ export async function syncCartToServer(
     }
     const payload = {
       user_id: Number(userId),
-      cartItems: items,
+      products: items,
     }
     const response = await fetch(`${BASE_URL}/carts/cartSync`, {
       method: "POST",
