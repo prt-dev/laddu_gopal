@@ -1,7 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import ProductList from "@/app/components/admin/ProductList";
+import ProductList from "@/components/admin/products/ProductList";
 
 export const metadata: Metadata = {
   title: "Products & Shringar | Makhan Chor Admin",

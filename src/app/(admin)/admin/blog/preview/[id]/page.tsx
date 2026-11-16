@@ -1,6 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
-import BlogPreview from "@/app/components/admin/BlogPreview";
+import BlogPreview from "@/components/admin/blogs/BlogPreview";
 
 export const metadata: Metadata = {
   title: "Blog Article Preview | Makhan Chor Admin",

@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import PageHeader from "@/components/web/PageHeader";
-import BillingForm from "@/components/web/BillingForm";
-import CheckoutOrderSummary from "@/components/web/CheckoutOrderSummary";
-import { CheckoutProvider } from "@/context/web/CheckoutContext";
+import PageHeader from "@/components/web/layout/PageHeader";
+import BillingForm from "@/components/web/checkout/BillingForm";
+import CheckoutOrderSummary from "@/components/web/checkout/CheckoutOrderSummary";
+import { CheckoutProvider } from "@/context/CheckoutContext";
 
 export const metadata: Metadata = {
   title: "Devotional Checkout & Shipping | Makkanchor",

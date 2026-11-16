@@ -1,8 +1,8 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import PageHeader from "@/components/web/PageHeader";
-import ShopSection from "@/components/web/ShopSection";
-import Spinner from "@/components/web/Spinner";
+import PageHeader from "@/components/web/layout/PageHeader";
+import ShopSection from "@/components/web/products/ShopSection";
+import Spinner from "@/components/web/common/Spinner";
 
 export const metadata: Metadata = {
   title: "Shop Handcrafted Poshak & Kundan Shringar | Makkanchor",

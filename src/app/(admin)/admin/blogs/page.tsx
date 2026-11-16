@@ -1,7 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import BlogList from "@/app/components/admin/BlogList";
+import BlogList from "@/components/admin/blogs/BlogList";
 
 export const metadata: Metadata = {
   title: "Blogs | Makhan Chor Admin",

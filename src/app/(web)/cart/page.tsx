@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import PageHeader from "@/components/web/PageHeader";
-import CartTable from "@/components/web/CartTable";
+import PageHeader from "@/components/web/layout/PageHeader";
+import CartTable from "@/components/web/cart/CartTable";
 
 export const metadata: Metadata = {
   title: "Shopping Basket & Cart | Makkanchor",

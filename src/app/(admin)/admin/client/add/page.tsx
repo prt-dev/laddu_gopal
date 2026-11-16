@@ -1,6 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
-import ClientAddForm from "@/app/components/admin/ClientAddForm";
+import ClientAddForm from "@/components/admin/clients/ClientAddForm";
 
 export const metadata: Metadata = {
   title: "Add Client | Makhan Chor Admin",

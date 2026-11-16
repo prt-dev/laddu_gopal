@@ -1,6 +1,6 @@
-import Hero from "@/components/web/Hero";
-import AboutSection from "@/components/web/AboutSection";
-import ProductCollection from "@/components/web/ProductCollection";
+import Hero from "@/components/web/home/Hero";
+import AboutSection from "@/components/web/home/AboutSection";
+import ProductCollection from "@/components/web/products/ProductCollection";
 
 export default function HomePage() {
   return (

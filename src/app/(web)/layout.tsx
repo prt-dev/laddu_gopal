@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import WebLayoutClient from "@/components/web/WebLayoutClient";
+import WebLayoutClient from "@/components/web/layout/WebLayoutClient";
 import "../web.css";
 import { siteConfig } from "@/config/site";
-import { WebAuthProvider } from "@/context/web/WebAuthContext";
-import { CartProvider } from "@/context/web/CartContext";
-import { GeneralProvider } from "@/context/web/GeneralContext";
-import WebProtectedRoute from "@/context/web/WebProtectedRoute";
+import { WebAuthProvider } from "@/context/WebAuthContext";
+import { CartProvider } from "@/context/CartContext";
+import { GeneralProvider } from "@/context/GeneralContext";
+import WebProtectedRoute from "@/context/WebProtectedRoute";
 
 export const metadata: Metadata = {
   title: {

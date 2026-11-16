@@ -1,7 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import ClientList from "@/app/components/admin/ClientList";
+import ClientList from "@/components/admin/clients/ClientList";
 
 export const metadata: Metadata = {
   title: "Clients | Makhan Chor Admin",

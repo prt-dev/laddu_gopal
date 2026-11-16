@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import PageHeader from "../../components/web/PageHeader";
-import Testimonials from "../../components/web/Testimonials";
+import PageHeader from "@/components/web/layout/PageHeader";
+import Testimonials from "@/components/web/home/Testimonials";
 
 export const metadata: Metadata = {
   title: "Devotee Experiences & Reviews | Makhan Chor",

@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -19,19 +23,60 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/app/*", "./src/*"],
-      "@/app/*": ["./src/app/*"],
-      "@/components/*": ["./src/app/components/*"],
-      "@/context/*": ["./src/app/context/*"],
-      "@/services/*": ["./src/app/services/*"],
-      "@/types/*": ["./src/app/types/*"],
-      "@/types": ["./src/app/types/index"],
-      "@/utils/*": ["./src/app/utils/*"],
-      "@/utils": ["./src/app/utils/utils"],
-      "@/config/*": ["./src/app/config/*"],
-      "@/data/*": ["./src/app/data/*"],
-      "@/hooks/*": ["./src/app/hooks/*"],
-      "@/icons": ["./src/app/icons/index"]
+      "@/*": [
+        "./src/*"
+      ],
+      "@/app/*": [
+        "./src/app/*"
+      ],
+      "@/components/*": [
+        "./src/components/*"
+      ],
+      "@/context/*": [
+        "./src/context/*"
+      ],
+      "@/context": [
+        "./src/context/index"
+      ],
+      "@/services/*": [
+        "./src/services/*"
+      ],
+      "@/types/*": [
+        "./src/types/*"
+      ],
+      "@/types": [
+        "./src/types/index"
+      ],
+      "@/data/*": [
+        "./src/data/*"
+      ],
+      "@/data": [
+        "./src/data/index"
+      ],
+      "@/utils/*": [
+        "./src/utils/*"
+      ],
+      "@/utils": [
+        "./src/utils/utils"
+      ],
+      "@/config/*": [
+        "./src/config/*"
+      ],
+      "@/config": [
+        "./src/config/index"
+      ],
+      "@/hooks/*": [
+        "./src/hooks/*"
+      ],
+      "@/hooks": [
+        "./src/hooks/index"
+      ],
+      "@/icons": [
+        "./src/icons/index"
+      ],
+      "@/icons/*": [
+        "./src/icons/*"
+      ]
     }
   },
   "include": [
@@ -42,5 +87,7 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ]
 }

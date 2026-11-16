@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import PageHeader from "../../components/web/PageHeader";
-import { siteConfig } from "../../config/site";
+import PageHeader from "@/components/web/layout/PageHeader";
+import { siteConfig } from "@/config/site";
 
 export const metadata: Metadata = {
   title: "Shipping & Delivery Policy | Makhan Chor - Laddu Gopal",

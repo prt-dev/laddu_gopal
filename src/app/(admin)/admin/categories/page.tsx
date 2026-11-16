@@ -1,7 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import CategoryList from "@/app/components/admin/CategoryList";
+import CategoryList from "@/components/admin/categories/CategoryList";
 
 export const metadata: Metadata = {
   title: "Categories | Makhan Chor Admin",

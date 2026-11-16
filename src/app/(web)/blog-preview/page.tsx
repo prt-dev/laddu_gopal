@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import BlogPreviewClient from "@/app/components/web/BlogPreviewClient";
+import BlogPreviewClient from "@/components/web/blogs/BlogPreviewClient";
 
 export const metadata: Metadata = {
   title: "Devotional Blogs & Seva Guides | Makhan Chor",

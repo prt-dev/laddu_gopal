@@ -1,8 +1,8 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import PageHeader from "@/components/web/PageHeader";
-import ShopDetailClient from "@/components/web/ShopDetailClient";
-import Spinner from "@/components/web/Spinner";
+import PageHeader from "@/components/web/layout/PageHeader";
+import ShopDetailClient from "@/components/web/products/ShopDetailClient";
+import Spinner from "@/components/web/common/Spinner";
 
 export const metadata: Metadata = {
   title: "Item Details & Specifications | Makkanchor",

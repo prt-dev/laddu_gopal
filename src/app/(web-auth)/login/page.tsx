@@ -1,5 +1,5 @@
 import React from "react";
-import WebUserLoginPageComponent from "@/app/components/web/auth/WebUserLoginPageComponent";
+import WebUserLoginPageComponent from "@/components/web/auth/WebUserLoginPageComponent";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {

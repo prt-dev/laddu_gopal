@@ -1,43 +1,124 @@
-Home Page
-==========
-
--- banner
--- collections (products): fetch products
--- fetch cart items
-
-
-Category
-========
-
--- fetch categories
--- fetch products
--- fetch cart items
--- feature products
-
-
-Product Details Page
-===================
-
--- fetch product
--- fetch categories
--- fetch cart items
--- feature products
--- similar products
-
-
-Cart Page
-=========
-
--- fetch cart items
--- update cart
-
-
-Checkout Page
-=============
-
--- fetch cart items
--- fetch user details if logged in
--- create user by billing form if not logged in
--- create order
--- razorpay payment
--- create payment on payment success/failed
+src/
+├── app/
+│   ├── (web)/
+│   │   ├── layout.tsx
+│   │   ├── page.tsx                           
+│   │   ├── user/page.tsx                      
+│   │   ├── products/page.tsx                  
+│   │   ├── blogs/page.tsx                     
+│   │   ├── blog/page.tsx
+│   │   ├── blog-preview/page.tsx
+│   │   ├── shop/page.tsx
+│   │   ├── shop-detail/page.tsx
+│   │   ├── cart/page.tsx
+│   │   ├── checkout/page.tsx
+│   │   ├── contact/page.tsx
+│   │   ├── testimonial/page.tsx
+│   │   ├── privacy-policy/page.tsx
+│   │   ├── refund-policy/page.tsx
+│   │   ├── shipping-policy/page.tsx
+│   │   └── terms-and-conditions/page.tsx
+│   │
+│   ├── (web-auth)/
+│   │   ├── layout.tsx
+│   │   ├── login/page.tsx
+│   │   ├── register/page.tsx
+│   │   ├── forget-password/page.tsx           
+│   │   └── forgot-password/page.tsx           
+│   │
+│   ├── (admin-auth)/
+│   │   └── admin/
+│   │       ├── layout.tsx                     
+│   │       ├── login/page.tsx                 
+│   │       ├── register/page.tsx              
+│   │       └── forget-password/page.tsx       
+│   │
+│   ├── (admin)/                               
+│   │   ├── layout.tsx
+│   │   └── admin/
+│   │       ├── dashboard/page.tsx
+│   │       ├── products/page.tsx
+│   │       ├── categories/page.tsx
+│   │       ├── clients/page.tsx
+│   │       ├── blogs/page.tsx
+│   │       ├── users/page.tsx
+│   │       └── settings/page.tsx
+│   │
+│   ├── context/                               
+│   │   ├── AuthContext.tsx                    
+│   │   ├── WebAuthContext.tsx                 
+│   │   ├── CartContext.tsx                    
+│   │   ├── CheckoutContext.tsx                
+│   │   ├── GeneralContext.tsx                 
+│   │   ├── ProtectedRoute.tsx                 
+│   │   ├── WebProtectedRoute.tsx              
+│   │   ├── SidebarContext.tsx                 
+│   │   ├── ThemeContext.tsx                   
+│   │   └── index.ts
+│   │
+│   └── components/
+│       ├── web/
+│       │   ├── layout/
+│       │   │   ├── header/                    
+│       │   │   ├── footer/                    
+│       │   │   └── etc/                       
+│       │   ├── auth/                          
+│       │   ├── products/                      
+│       │   ├── blogs/                         
+│       │   ├── cart/                          
+│       │   ├── checkout/                      
+│       │   ├── home/                          
+│       │   └── common/                        
+│       │
+│       ├── admin/
+│       │   ├── layout/
+│       │   │   ├── header/                    
+│       │   │   ├── footer/                    
+│       │   │   └── etc/                       
+│       │   ├── auth/                          
+│       │   ├── products/                      
+│       │   ├── categories/                    
+│       │   ├── clients/                       
+│       │   ├── blogs/                         
+│       │   ├── dashboard/                     
+│       │   ├── users/                         
+│       │   └── common/                        
+│       │
+│       └── common/
+│           └── Loading.tsx                    
+│
+├── services/                                  
+│   ├── apiClient.ts
+│   ├── authService.ts
+│   ├── blogService.ts
+│   ├── cartService.ts
+│   ├── categoryService.ts
+│   ├── clientService.ts
+│   ├── orderService.ts
+│   ├── paymentService.ts
+│   ├── productService.ts
+│   ├── userService.ts
+│   └── index.ts
+│
+├── types/                                     
+│   ├── auth.ts / authTypes.ts
+│   ├── blog.ts / blogTypes.ts
+│   ├── cart.ts / cartTypes.ts
+│   ├── category.ts / categoryTypes.ts
+│   ├── checkout.ts / checkoutTypes.ts
+│   ├── client.ts / clientTypes.ts
+│   ├── order.ts / orderTypes.ts
+│   ├── payment.ts / paymentTypes.ts
+│   ├── product.ts / productTypes.ts
+│   ├── user.ts / userTypes.ts
+│   ├── api.ts / apiTypes.ts
+│   ├── theme.ts
+│   ├── general.ts
+│   └── index.ts
+│
+└── data/                                      
+    ├── products.ts / productData.ts
+    ├── products.json
+    ├── categories.json / categoryData.ts
+    ├── indianStatesCities.ts
+    └── index.ts
