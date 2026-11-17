@@ -1,6 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
-import CategoryForm from "@/app/components/admin/CategoryForm";
+import CategoryForm from "@/components/admin/categories/CategoryForm";
 
 export const metadata: Metadata = {
   title: "Edit Category | Makhan Chor Admin",

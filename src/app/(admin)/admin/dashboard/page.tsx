@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import DashboardClient from "@/app/components/admin/DashboardClient";
+import DashboardClient from "@/components/admin/dashboard/DashboardClient";
 
 export const metadata: Metadata = {
   title: "Dashboard | Makhan Chor Admin",

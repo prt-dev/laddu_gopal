@@ -1,10 +1,10 @@
 import React from "react";
 import type { Metadata } from "next";
 import "@/app/web.css";
-import { siteConfig } from "@/app/config/site";
-import { WebAuthProvider } from "@/app/context/WebAuthContext";
-import WebAuthLayoutClient from "@/app/components/web/auth/WebAuthLayoutClient";
-import WebProtectedRoute from "@/app/context/WebProtectedRoute";
+import { siteConfig } from "@/config/site";
+import { WebAuthProvider } from "@/context/WebAuthContext";
+import WebAuthLayoutClient from "@/components/web/layout/WebAuthLayoutClient";
+import WebProtectedRoute from "@/context/WebProtectedRoute";
 
 export const metadata: Metadata = {
   title: "Devotee Portal | " + siteConfig.name,

@@ -1,8 +1,8 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import PageHeader from "@/app/components/web/PageHeader";
-import BlogsGridSection from "@/app/components/web/BlogsGridSection";
-import Loading from "@/app/components/common/Loading";
+import PageHeader from "@/components/web/layout/PageHeader";
+import BlogsGridSection from "@/components/web/blogs/BlogsGridSection";
+import Loading from "@/components/common/Loading";
 
 export const metadata: Metadata = {
   title: "Devotional Blogs, Daily Seva Vidhi & Stories | Makhan Chor",

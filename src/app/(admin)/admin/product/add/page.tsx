@@ -1,6 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
-import ProductAddForm from "@/app/components/admin/ProductAddForm";
+import ProductAddForm from "@/components/admin/products/ProductAddForm";
 
 export const metadata: Metadata = {
   title: "Add Product | Makhan Chor Admin",

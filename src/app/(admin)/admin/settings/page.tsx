@@ -1,8 +1,8 @@
 import React from "react";
-import SettingsSidebarNav from "@/app/components/admin/SettingsSidebarNav";
-import ProfileSettingsCard from "@/app/components/admin/ProfileSettingsCard";
-import AppearanceSettingsCard from "@/app/components/admin/AppearanceSettingsCard";
-import NotificationsSettingsCard from "@/app/components/admin/NotificationsSettingsCard";
+import SettingsSidebarNav from "@/components/admin/dashboard/SettingsSidebarNav";
+import ProfileSettingsCard from "@/components/admin/users/ProfileSettingsCard";
+import AppearanceSettingsCard from "@/components/admin/dashboard/AppearanceSettingsCard";
+import NotificationsSettingsCard from "@/components/admin/dashboard/NotificationsSettingsCard";
 
 export default function AdminSettingsPage() {
   return (

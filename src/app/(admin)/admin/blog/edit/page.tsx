@@ -1,6 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
-import BlogForm from "@/app/components/admin/BlogForm";
+import BlogForm from "@/components/admin/blogs/BlogForm";
 
 export const metadata: Metadata = {
   title: "Edit Blog | Makhan Chor Admin",

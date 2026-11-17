@@ -1,9 +1,9 @@
-import React from "react";
-import ThemeScript from "@/app/components/admin/ThemeScript";
+﻿import React from "react";
+import ThemeScript from "@/components/admin/layout/ThemeScript";
 import type { Metadata } from "next";
 import "@/app/admin.css";
-import { AuthProvider } from "@/app/context/AuthContext";
-import ProtectedRoute from "../context/ProtectedRoute";
+import { AuthProvider } from "@/context/AuthContext";
+import ProtectedRoute from "../../context/ProtectedRoute";
 
 export const metadata: Metadata = {
   title: "Admin Portal | Makhan Chor",

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import PageHeader from "../../components/web/PageHeader";
-import ContactSection from "../../components/web/ContactSection";
+import PageHeader from "@/components/web/layout/PageHeader";
+import ContactSection from "@/components/web/home/ContactSection";
 
 export const metadata: Metadata = {
   title: "Contact Us | Makhan Chor - Laddu Gopal",

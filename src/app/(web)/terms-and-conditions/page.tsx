@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import PageHeader from "../../components/web/PageHeader";
-import { siteConfig } from "../../config/site";
+import PageHeader from "@/components/web/layout/PageHeader";
+import { siteConfig } from "@/config/site";
 
 export const metadata: Metadata = {
   title: "Terms & Conditions | Makhan Chor - Laddu Gopal",

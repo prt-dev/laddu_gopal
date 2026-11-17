@@ -1,5 +1,5 @@
 import React from "react";
-import WebUserRegisterPageComponent from "@/app/components/web/auth/WebUserRegisterPageComponent";
+import WebUserRegisterPageComponent from "@/components/web/auth/WebUserRegisterPageComponent";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {

@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import PageHeader from "../../components/web/PageHeader";
-import BillingForm from "../../components/web/BillingForm";
-import CheckoutOrderSummary from "../../components/web/CheckoutOrderSummary";
-import { CheckoutProvider } from "@/app/context/CheckoutContext";
+import PageHeader from "@/components/web/layout/PageHeader";
+import BillingForm from "@/components/web/checkout/BillingForm";
+import CheckoutOrderSummary from "@/components/web/checkout/CheckoutOrderSummary";
+import { CheckoutProvider } from "@/context/CheckoutContext";
 
 export const metadata: Metadata = {
-  title: "Checkout & Dispatch | Makhan Chor - Laddu Gopal",
+  title: "Devotional Checkout & Shipping | Makkanchor",
   description:
     "Complete your sacred order for handcrafted Laddu Gopal poshak and devotional accessories.",
 };
